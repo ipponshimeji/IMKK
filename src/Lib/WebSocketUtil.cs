@@ -98,7 +98,7 @@ namespace IMKK.Lib {
 
 			public const int MinBufferSize = 32;
 
-			public const int MaxBufferSize = 16 * 1024 * 1024;
+			public const int MaxBufferSize = 1 * 1024 * 1024;	// 1M
 
 			public const int DefaultBufferSize = 1024;
 
@@ -192,16 +192,7 @@ namespace IMKK.Lib {
 			}
 
 			public override int Read(byte[] buffer, int offset, int count) {
-				try {
-					return ReadAsync(buffer, offset, count, CancellationToken.None).Sync();
-				} catch (AggregateException exception) {
-					Exception? innerException = exception.InnerException;
-					if (innerException != null) {
-						throw innerException;
-					} else {
-						throw;
-					}
-				}
+				return ReadAsync(buffer, offset, count, CancellationToken.None).Sync();
 			}
 
 			#endregion
@@ -256,16 +247,7 @@ namespace IMKK.Lib {
 			}
 
 			public override void Write(byte[] buffer, int offset, int count) {
-				try {
-					WriteAsync(buffer, offset, count, CancellationToken.None).Sync();
-				} catch (AggregateException exception) {
-					Exception? innerException = exception.InnerException;
-					if (innerException != null) {
-						throw innerException;
-					} else {
-						throw;
-					}
-				}
+				WriteAsync(buffer, offset, count, CancellationToken.None).Sync();
 			}
 
 			#endregion

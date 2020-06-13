@@ -173,8 +173,8 @@ namespace IMKK.Lib.Test {
 
 		#region tests
 
-		[Fact]
-		public async void MessageStreamTest() {
+		[Fact(DisplayName="MessageStream: communication")]
+		public async void MessageStream_communication() {
 			// resources
 			byte[] simpleSample = new byte[] { 0, 1, 2, 3, 4, 5, 6 };
 			byte[] longSample = Enumerable.Range(0, 64).Select(n => (byte)n).ToArray();
@@ -270,7 +270,7 @@ namespace IMKK.Lib.Test {
 						// This case cause buffer refill.
 						using (ReceiveMessageStream stream = new ReceiveMessageStream(webSocket, refillTestBufLen)) {
 							// receive the whole message by multiple receive operations
-							int stepLen = 20;   // read length at a time
+							int stepLen = 18;   // read length at a time
 							Debug.Assert(stepLen < refillTestBufLen);
 							List<byte> actual = await ReceiveMessageAsync(stream, stepLen);
 
@@ -292,7 +292,7 @@ namespace IMKK.Lib.Test {
 							Assert.False(stream.CanWrite);
 							Assert.False(stream.CanSeek);
 
-							// receive the whole message by multiple receive operations
+							// receive the whole message
 							List<byte> actual = await ReceiveMessageAsync(stream, 8);
 
 							// assert
@@ -305,29 +305,32 @@ namespace IMKK.Lib.Test {
 					}
 				} finally {
 					listener.Stop();
-					serverTask.Wait();
+					serverTask.Sync();
 				}
 			}
 		}
 
-		[Fact]
-		public async void MessageStreamErrorTest() {
+		[Fact(DisplayName="MessageStream: error cases")]
+		public async void MessageStream_error() {
 			using (HttpListener listener = StartListening()) {
 				async Task server() {
 					using (WebSocket webSocket = await AcceptWebSocketAsync(listener)) {
-						// arguments for constructor
+						// invalid arguments for constructor
+						// webSocket: null
 						ArgumentException exception = Assert.Throws<ArgumentNullException>(() => {
 							using (ReceiveMessageStream stream = new ReceiveMessageStream(null!)) {
 							}
 						});
 						Assert.Equal("webSocket", exception.ParamName);
 
+						// bufferSize: under the min value
 						exception = Assert.Throws<ArgumentOutOfRangeException>(() => {
 							using (ReceiveMessageStream stream = new ReceiveMessageStream(webSocket, ReceiveMessageStream.MinBufferSize - 1)) {
 							}
 						});
 						Assert.Equal("bufferSize", exception.ParamName);
 
+						// bufferSize: over the max value
 						exception = Assert.Throws<ArgumentOutOfRangeException>(() => {
 							using (ReceiveMessageStream stream = new ReceiveMessageStream(webSocket, ReceiveMessageStream.MaxBufferSize + 1)) {
 							}
@@ -335,7 +338,9 @@ namespace IMKK.Lib.Test {
 						Assert.Equal("bufferSize", exception.ParamName);
 
 						// unsupported operations
-						using (ReceiveMessageStream stream = new ReceiveMessageStream(webSocket, ReceiveMessageStream.MinBufferSize)) {
+						// bufferSize: the max value
+						using (ReceiveMessageStream stream = new ReceiveMessageStream(webSocket, ReceiveMessageStream.MaxBufferSize)) {
+							// unsupported operations
 							Assert.Throws<NotSupportedException>(() => { var val = stream.Length; });
 							Assert.Throws<NotSupportedException>(() => { var val = stream.Position; });
 							Assert.Throws<NotSupportedException>(() => { stream.Position = 0; });
@@ -348,11 +353,10 @@ namespace IMKK.Lib.Test {
 							Assert.Empty(actual);
 						}
 
-						// TODO: test ReceiveMessageStream.MaxBufferSize?
-
 						// closing
 						await Assert.ThrowsAsync<EndOfStreamException>(async () => {
-							using (ReceiveMessageStream stream = new ReceiveMessageStream(webSocket)) {
+							// bufferSize: the min value
+							using (ReceiveMessageStream stream = new ReceiveMessageStream(webSocket, ReceiveMessageStream.MinBufferSize)) {
 								await ReceiveMessageAsync(stream, 8);
 
 								// assert
@@ -366,7 +370,8 @@ namespace IMKK.Lib.Test {
 				Task serverTask = Task.Run(server);
 				try {
 					using (ClientWebSocket webSocket = await ConnectWebSocketAsync(listener)) {
-						// arguments for constructor
+						// invalid arguments for constructor
+						// webSocket: null
 						ArgumentException exception = Assert.Throws<ArgumentNullException>(() => {
 							using (SendMessageStream stream = new SendMessageStream(null!, WebSocketMessageType.Binary)) {
 							}
@@ -375,12 +380,15 @@ namespace IMKK.Lib.Test {
 
 						// unsupported operations
 						using (SendMessageStream stream = new SendMessageStream(webSocket, WebSocketMessageType.Binary)) {
+							// unsupported operations
 							Assert.Throws<NotSupportedException>(() => { var val = stream.Length; });
 							Assert.Throws<NotSupportedException>(() => { var val = stream.Position; });
 							Assert.Throws<NotSupportedException>(() => { stream.Position = 0; });
 							Assert.Throws<NotSupportedException>(() => { stream.SetLength(0); });
 							Assert.Throws<NotSupportedException>(() => { stream.Seek(0, SeekOrigin.Begin); });
 							Assert.Throws<NotSupportedException>(() => { stream.Read(new byte[4], 0, 4); });
+
+							// send an empty message
 						}
 
 						// closing
@@ -388,13 +396,44 @@ namespace IMKK.Lib.Test {
 					}
 				} finally {
 					listener.Stop();
-					serverTask.Wait();
+					serverTask.Sync();
 				}
 			}
 		}
 
-		[Fact]
+		[Fact(DisplayName = "MessageStream: unwrap AggregateException")]
+		public async void MessageStream_unwrapAggregateException() {
+			using (HttpListener listener = StartListening()) {
+				async Task server() {
+					using (WebSocket webSocket = await AcceptWebSocketAsync(listener)) {
+						// closing
+						// The thrown exception should not an AggregateException but an EndOfStreamException
+						Assert.Throws<EndOfStreamException>(() => {
+							using (ReceiveMessageStream stream = new ReceiveMessageStream(webSocket)) {
+								stream.Read(new byte[4], 0, 4);
+							}
+						});
+						await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
+					}
+				}
+
+				Task serverTask = Task.Run(server);
+				try {
+					using (ClientWebSocket webSocket = await ConnectWebSocketAsync(listener)) {
+						// closing
+						await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "bye", CancellationToken.None);
+					}
+				} finally {
+					listener.Stop();
+					serverTask.Sync();
+				}
+			}
+		}
+
+
+		[Fact(DisplayName= "ReceiveJson/SendJson")]
 		public async void JsonTest() {
+			// resources
 			object? sample_null = null;
 			bool sample_boolean = true;
 			double sample_number = 123.45;
@@ -412,6 +451,7 @@ namespace IMKK.Lib.Test {
 			using (HttpListener listener = StartListening()) {
 				async Task server() {
 					using (WebSocket webSocket = await AcceptWebSocketAsync(listener)) {
+						// communicate JSON values
 						actual_null = webSocket.ReceiveJson<object?>();
 						webSocket.SendJson<bool>(sample_boolean);
 						actual_number = await webSocket.ReceiveJsonAsync<double>();
@@ -430,6 +470,7 @@ namespace IMKK.Lib.Test {
 				Task serverTask = Task.Run(server);
 				try {
 					using (ClientWebSocket webSocket = await ConnectWebSocketAsync(listener)) {
+						// communicate JSON values
 						webSocket.SendJson<object?>(sample_null);
 						actual_boolean = webSocket.ReceiveJson<bool>();
 						await webSocket.SendJsonAsync<double>(sample_number);
@@ -442,7 +483,7 @@ namespace IMKK.Lib.Test {
 					}
 				} finally {
 					listener.Stop();
-					serverTask.Wait();
+					serverTask.Sync();
 				}
 
 				// assert
