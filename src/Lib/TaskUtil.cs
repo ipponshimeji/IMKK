@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 
 
-namespace IMKK.Lib {
+namespace IMKK {
 	public static class TaskUtil {
 		#region methods
 

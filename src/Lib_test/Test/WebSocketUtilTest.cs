@@ -9,12 +9,12 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using IMKK.Lib;
-using SendMessageStream = IMKK.Lib.WebSocketUtil.SendMessageStream;
-using ReceiveMessageStream = IMKK.Lib.WebSocketUtil.ReceiveMessageStream;
+using IMKK;
+using SendMessageStream = IMKK.WebSocketUtil.SendMessageStream;
+using ReceiveMessageStream = IMKK.WebSocketUtil.ReceiveMessageStream;
 
 
-namespace IMKK.Lib.Test {
+namespace IMKK.Test {
 	public class WebSocketUtilTest {
 		#region data
 
@@ -302,6 +302,7 @@ namespace IMKK.Lib.Test {
 
 						// closing
 						await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "bye", CancellationToken.None);
+						serverTask.Sync();
 					}
 				} finally {
 					listener.Stop();
@@ -393,6 +394,7 @@ namespace IMKK.Lib.Test {
 
 						// closing
 						await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "bye", CancellationToken.None);
+						serverTask.Sync();
 					}
 				} finally {
 					listener.Stop();
@@ -422,6 +424,7 @@ namespace IMKK.Lib.Test {
 					using (ClientWebSocket webSocket = await ConnectWebSocketAsync(listener)) {
 						// closing
 						await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "bye", CancellationToken.None);
+						serverTask.Sync();
 					}
 				} finally {
 					listener.Stop();
@@ -429,7 +432,6 @@ namespace IMKK.Lib.Test {
 				}
 			}
 		}
-
 
 		[Fact(DisplayName= "ReceiveJson/SendJson")]
 		public async void JsonTest() {
@@ -480,6 +482,7 @@ namespace IMKK.Lib.Test {
 
 						// closing
 						await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "bye", CancellationToken.None);
+						serverTask.Sync();
 					}
 				} finally {
 					listener.Stop();

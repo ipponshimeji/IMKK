@@ -1,14 +1,15 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <IsPackable>false</IsPackable>
-    <AssemblyName>IMKK.Lib.Test</AssemblyName>
-    <RootNamespace>IMKK.Lib</RootNamespace>
+    <AssemblyName>IMKK.Test</AssemblyName>
+    <RootNamespace>IMKK</RootNamespace>
     <Nullable>enable</Nullable>
     <Authors>Takamasa Uramoto</Authors>
     <Product>IMKK (Ittan Mochi Kaette Kentoushimasu)</Product>
     <Copyright>Copyright 2020 Takamasa Uramoto</Copyright>
+    <PackageId>IMKK.Test</PackageId>
   </PropertyGroup>
 
   <ItemGroup>

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Utf8Json;
 
 
-namespace IMKK.Lib {
+namespace IMKK {
 	public static class WebSocketUtil {
 		#region types
 

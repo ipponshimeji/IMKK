@@ -1,9 +1,9 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-    <AssemblyName>IMKK.Lib</AssemblyName>
-    <RootNamespace>IMKK.Lib</RootNamespace>
+    <AssemblyName>IMKK</AssemblyName>
+    <RootNamespace>IMKK</RootNamespace>
     <Nullable>enable</Nullable>
     <Authors>Takamasa Uramoto</Authors>
     <Product>IMKK (Ittan Mochi Kaette Kentoushimasu)</Product>
