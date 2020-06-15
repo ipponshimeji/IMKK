@@ -4,6 +4,14 @@ using System.Threading.Tasks;
 
 namespace IMKK {
 	public static class TaskUtil {
+		#region data
+
+		// global running task table
+		public static readonly RunningTaskTable RunningTaskTable = new RunningTaskTable();
+
+		#endregion
+
+
 		#region methods
 
 		public static void Sync(this Task task, bool passThroughAggregateException = false) {
