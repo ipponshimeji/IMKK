@@ -21,7 +21,7 @@ namespace IMKK {
 			}
 
 			// check state
-			if (task.IsCompleted) {
+			if (task.IsCompletedSuccessfully) {
 				return;
 			}
 
@@ -43,7 +43,7 @@ namespace IMKK {
 		}
 
 		public static void Sync(this ValueTask valueTask, bool passThroughAggregateException = false) {
-			if (valueTask.IsCompleted == false) {
+			if (valueTask.IsCompletedSuccessfully == false) {
 				valueTask.AsTask().Sync(passThroughAggregateException);
 			}
 		}
@@ -54,7 +54,7 @@ namespace IMKK {
 		}
 
 		public static T Sync<T>(this ValueTask<T> valueTask, bool passThroughAggregateException = false) {
-			return valueTask.IsCompleted ? valueTask.Result : valueTask.AsTask().Sync(passThroughAggregateException);
+			return valueTask.IsCompletedSuccessfully ? valueTask.Result : valueTask.AsTask().Sync(passThroughAggregateException);
 		}
 
 		#endregion

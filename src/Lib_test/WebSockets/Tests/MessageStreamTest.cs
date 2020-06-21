@@ -2,28 +2,25 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.WebSockets;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using IMKK.WebSockets;
 
 
 namespace IMKK.WebSockets.Tests {
 	public class MessageStreamTest {
 		#region tests
 
-		[Fact(DisplayName="MessageStream: communication")]
-		public async void MessageStream_communication() {
+		[Fact(DisplayName="MessageStream: basic communication and properties")]
+		public async void MessageStream_basiccommunication() {
 			// resources
-			byte[] simpleSample = new byte[] { 0, 1, 2, 3, 4, 5, 6 };
-			byte[] longSample = Enumerable.Range(0, 64).Select(n => (byte)n).ToArray();
+			byte[] simpleSample = WebSocketsTestUtil.GetSimpleSample();
+			byte[] longSample = WebSocketsTestUtil.GetLongSample();
 			Debug.Assert(ReceiveMessageStream.MinBufferSize < longSample.Length);
 			const int refillTestBufLen = ReceiveMessageStream.MinBufferSize;
-			byte[] textSample = Encoding.UTF8.GetBytes("This is a text sample");
+			byte[] textSample = WebSocketsTestUtil.GetTextSampleBytes();
 
 			using (HttpListener listener = WebSocketsTestUtil.StartListening()) {
 				async Task server() {
@@ -60,7 +57,7 @@ namespace IMKK.WebSockets.Tests {
 						// text
 						using (ReceiveMessageStream stream = new ReceiveMessageStream(webSocket)) {
 							// read the whole message synchronously
-							List<byte> actual = stream.ReceiveMessage();
+							List<byte> actual = stream.ReceiveMessage();	// non-async version
 
 							// assert
 							Assert.Equal(WebSocketMessageType.Text, stream.MessageType);
@@ -83,10 +80,13 @@ namespace IMKK.WebSockets.Tests {
 						// closing
 						await Assert.ThrowsAsync<EndOfStreamException>(async () => {
 							using (ReceiveMessageStream stream = new ReceiveMessageStream(webSocket)) {
-								await stream.ReceiveMessageAsync();
-
-								// assert
-								Assert.Equal(WebSocketMessageType.Close, stream.MessageType);
+								try {
+									await stream.ReceiveMessageAsync();
+								} catch (EndOfStreamException) {
+									// assert
+									Assert.Equal(WebSocketMessageType.Close, stream.MessageType);
+									throw;
+								}
 							}
 						});
 						await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
@@ -183,12 +183,18 @@ namespace IMKK.WebSockets.Tests {
 						// bufferSize: the max value
 						using (ReceiveMessageStream stream = new ReceiveMessageStream(webSocket, ReceiveMessageStream.MaxBufferSize)) {
 							// unsupported operations
+							// Length
 							Assert.Throws<NotSupportedException>(() => { var val = stream.Length; });
+							// Position (get, set)
 							Assert.Throws<NotSupportedException>(() => { var val = stream.Position; });
 							Assert.Throws<NotSupportedException>(() => { stream.Position = 0; });
+							// SetLength()
 							Assert.Throws<NotSupportedException>(() => { stream.SetLength(0); });
+							// Seek()
 							Assert.Throws<NotSupportedException>(() => { stream.Seek(0, SeekOrigin.Begin); });
+							// Flush()
 							Assert.Throws<NotSupportedException>(() => { stream.Flush(); });
+							// Write()
 							Assert.Throws<NotSupportedException>(() => { stream.Write(new byte[4], 0, 4); });
 
 							List<byte> actual = await stream.ReceiveMessageAsync();
@@ -199,10 +205,13 @@ namespace IMKK.WebSockets.Tests {
 						await Assert.ThrowsAsync<EndOfStreamException>(async () => {
 							// bufferSize: the min value
 							using (ReceiveMessageStream stream = new ReceiveMessageStream(webSocket, ReceiveMessageStream.MinBufferSize)) {
-								await stream.ReceiveMessageAsync();
-
-								// assert
-								Assert.Equal(WebSocketMessageType.Close, stream.MessageType);
+								try {
+									await stream.ReceiveMessageAsync();
+								} catch (EndOfStreamException) {
+									// assert
+									Assert.Equal(WebSocketMessageType.Close, stream.MessageType);
+									throw;
+								}
 							}
 						});
 						await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
@@ -223,11 +232,16 @@ namespace IMKK.WebSockets.Tests {
 						// unsupported operations
 						using (SendMessageStream stream = new SendMessageStream(webSocket, WebSocketMessageType.Binary)) {
 							// unsupported operations
+							// Length
 							Assert.Throws<NotSupportedException>(() => { var val = stream.Length; });
+							// Position (get; set)
 							Assert.Throws<NotSupportedException>(() => { var val = stream.Position; });
 							Assert.Throws<NotSupportedException>(() => { stream.Position = 0; });
+							// SetLength()
 							Assert.Throws<NotSupportedException>(() => { stream.SetLength(0); });
+							// Seek()
 							Assert.Throws<NotSupportedException>(() => { stream.Seek(0, SeekOrigin.Begin); });
+							// Read()
 							Assert.Throws<NotSupportedException>(() => { stream.Read(new byte[4], 0, 4); });
 
 							// send an empty message
@@ -252,6 +266,7 @@ namespace IMKK.WebSockets.Tests {
 						// The thrown exception should not an AggregateException but an EndOfStreamException
 						Assert.Throws<EndOfStreamException>(() => {
 							using (ReceiveMessageStream stream = new ReceiveMessageStream(webSocket)) {
+								// use non-async version to check whether the AggregateException is unwapped
 								stream.Read(new byte[4], 0, 4);
 							}
 						});

@@ -97,7 +97,7 @@ namespace IMKK.WebSockets {
 		#endregion
 
 
-		#region methods
+		#region overridables
 
 		public virtual async ValueTask ReceiveAsync(CancellationToken cancellationToken) {
 			// check state
@@ -113,11 +113,13 @@ namespace IMKK.WebSockets {
 			// receive the next data from the web socket
 			ValueWebSocketReceiveResult result = await webSocket.ReceiveAsync(new Memory<byte>(this.buffer), cancellationToken);
 			this.MessageType = result.MessageType;
-			this.EndOfMessage = result.EndOfMessage;
 			if (result.MessageType == WebSocketMessageType.Close) {
 				Debug.Assert(this.limit == 0);  // is this the first receiving?
+				Debug.Assert(result.EndOfMessage);
+				this.EndOfMessage = true;
 				throw new EndOfStreamException();
 			}
+			this.EndOfMessage = result.EndOfMessage;
 			this.next = 0;
 			this.limit = result.Count;
 		}

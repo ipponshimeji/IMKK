@@ -23,8 +23,4 @@
     <ProjectReference Include="..\Lib\Lib.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Test\" />
-  </ItemGroup>
-
 </Project>

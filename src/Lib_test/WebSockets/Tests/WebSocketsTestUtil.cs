@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.WebSockets;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -20,6 +21,29 @@ namespace IMKK.WebSockets.Tests {
 		#region data
 
 		private static readonly Random random = new Random();
+
+		#endregion
+
+
+		#region samples
+
+		// The sample byte arrays are not provided as properties but by methods,
+		// because the contents of byte[] type can be changed even if
+		// it is defined as a readonly property. 
+
+		public static byte[] GetSimpleSample() {
+			return new byte[] { 0, 1, 2, 3, 4, 5, 6 };
+		}
+
+		public static byte[] GetLongSample() {
+			return Enumerable.Range(0, 64).Select(n => (byte)n).ToArray();
+		}
+
+		public const string TextSample = "This is a text sample.";
+
+		public static byte[] GetTextSampleBytes() {
+			return Encoding.UTF8.GetBytes(TextSample);
+		}
 
 		#endregion
 
