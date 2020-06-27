@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 
 
@@ -34,7 +35,7 @@ namespace IMKK {
 				} catch (AggregateException exception) {
 					Exception? innerException = exception.InnerException;
 					if (innerException != null) {
-						throw innerException;
+						ExceptionDispatchInfo.Capture(innerException).Throw();
 					} else {
 						throw;
 					}
