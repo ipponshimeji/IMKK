@@ -3,6 +3,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.WebSockets;
+using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Utf8Json;
@@ -96,6 +98,10 @@ namespace IMKK.WebSockets {
 
 		#region data
 
+		// UTF8 without BOM
+		public static readonly Encoding DefaultTextEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+
+
 		private object instanceLocker = new object();
 
 		private WebSocket? webSocket = null;
@@ -104,7 +110,7 @@ namespace IMKK.WebSockets {
 
 		/// <summary>
 		/// The send stream which is provided by SendMessage() method and
-		/// used to send a message currently.
+		/// being used to send a message currently.
 		/// </summary>
 		private InternalSendMessageStream? currentSendStream = null;
 
@@ -112,9 +118,23 @@ namespace IMKK.WebSockets {
 
 		/// <summary>
 		/// The receive stream which is provided by ReceiveMessageAsync() method and
-		/// used to receive a message currently.
+		/// being used to receive a message currently.
 		/// </summary>
 		private InternalReceiveMessageStream? currentReceiveStream = null;
+
+		#endregion
+
+
+		#region properties
+
+		public WebSocketState State => (webSocket == null ? WebSocketState.None : webSocket.State);
+
+		#endregion
+
+
+		#region event
+
+		// TODO MessageReceiving, ConnectionClosed
 
 		#endregion
 
@@ -159,10 +179,14 @@ namespace IMKK.WebSockets {
 			if (ws != null) {
 				// launch the disposing operation on other thread because WebSocket.CloseAsync() is async
 				TaskUtil.RunningTaskTable.MonitorTask(async () => {
-					if (ws.State == WebSocketState.Open || ws.State == WebSocketState.CloseReceived) {
-						await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
+					try {
+						if (ws.State == WebSocketState.Open || ws.State == WebSocketState.CloseReceived) {
+							await ws.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
+						}
+						ws.Dispose();
+					} catch {
+						// TODO: log
 					}
-					ws.Dispose();
 				});
 			}
 		}
@@ -285,6 +309,48 @@ namespace IMKK.WebSockets {
 			}
 
 			return stream;
+		}
+
+		public StreamWriter SendTextMessage(Encoding? encoding = null) {
+			// check argument
+			if (encoding == null) {
+				encoding = DefaultTextEncoding;
+			}
+
+			return new StreamWriter(SendMessage(WebSocketMessageType.Text), encoding);
+		}
+
+		public async ValueTask<StreamReader> ReceiveTextMessageAsync(Encoding? encoding = null) {
+			// check argument
+			if (encoding == null) {
+				encoding = DefaultTextEncoding;
+			}
+
+			return new StreamReader(await ReceiveMessageAsync(), encoding);
+		}
+
+		public async ValueTask SendTextAsync(string? text, Encoding? encoding = null) {
+			using (StreamWriter writer = SendTextMessage(encoding)) {
+				await writer.WriteAsync(text);
+			}
+		}
+
+		public async ValueTask<string> ReceiveTextAsync(Encoding? encoding = null) {
+			using (StreamReader reader = await ReceiveTextMessageAsync(encoding)) {
+				return await reader.ReadToEndAsync();
+			}
+		}
+
+		public async ValueTask SendJsonAsync<T>(T value) {
+			using (SendMessageStream stream = SendMessage(WebSocketMessageType.Text)) {
+				await JsonSerializer.SerializeAsync<T>(stream, value);
+			}
+		}
+
+		public async ValueTask<T> ReceiveJsonAsync<T>() {
+			using (ReceiveMessageStream stream = await ReceiveMessageAsync()) {
+				return await JsonSerializer.DeserializeAsync<T>(stream);
+			}
 		}
 
 		#endregion
