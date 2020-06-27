@@ -193,6 +193,74 @@ namespace IMKK.WebSockets.Tests {
 			return message;
 		}
 
+		public static void WaitForServerTask(Task serverTask, Exception? clientException) {
+			if (clientException == null) {
+				// the following line may throw an server side exception
+				serverTask.Sync();
+			} else {
+				try {
+					serverTask.Sync();
+				} catch (Exception serverException) {
+					// select the exception to be thrown
+					// Generally, give the priority to the client exception over the server exception.
+					// But the server exception is an assertion error while the client exception is not,
+					// select the assertion error. 
+					if (serverException is Xunit.Sdk.XunitException && !(clientException is Xunit.Sdk.XunitException)) {
+						throw;
+					}
+				}
+			}
+		}
+
+		public static async ValueTask RunClientServerAsync(Func<HttpListener, Task> clientProc, Func<HttpListener, Task> serverProc) {
+			// check arguments
+			if (clientProc == null) {
+				throw new ArgumentNullException(nameof(clientProc));
+			}
+			if (serverProc == null) {
+				throw new ArgumentNullException(nameof(serverProc));
+			}
+
+			// run web client/server procedures
+			using (HttpListener listener = WebSocketsTestUtil.StartListening()) {
+				Exception? clientException = null;
+				Task serverTask = Task.Run(async () => await serverProc(listener));
+				try {
+					await clientProc(listener);
+				} catch (Exception exception) {
+					clientException = exception;
+					throw;
+				} finally {
+					listener.Stop();
+					WaitForServerTask(serverTask, clientException);
+				}
+			}
+		}
+
+		public static ValueTask RunClientServerAsync(Func<WebSocket, Task> clientProc, Func<WebSocket, Task> serverProc) {
+			// check arguments
+			if (clientProc == null) {
+				throw new ArgumentNullException(nameof(clientProc));
+			}
+			if (serverProc == null) {
+				throw new ArgumentNullException(nameof(serverProc));
+			}
+
+			// run web client/server procedures
+			return WebSocketsTestUtil.RunClientServerAsync(
+				clientProc: async (HttpListener listener) => {
+					using (ClientWebSocket webSocket = await listener.ConnectWebSocketAsync()) {
+						await clientProc(webSocket);
+					}
+				},
+				serverProc: async (HttpListener listener) => {
+					using (WebSocket webSocket = await listener.AcceptWebSocketAsync()) {
+						await serverProc(webSocket);
+					}
+				}
+			);
+		}
+
 		#endregion
 	}
 }

@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net.WebSockets;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -30,6 +32,13 @@ namespace IMKK.WebSockets {
 		protected bool EndOfMessage { get; private set; } = false;
 
 		public WebSocketMessageType? MessageType { get; private set; } = null;
+
+		#endregion
+
+
+		#region properties
+
+		public int BufferSize => (this.buffer == null ? 0: this.buffer.Length);
 
 		#endregion
 
@@ -122,6 +131,26 @@ namespace IMKK.WebSockets {
 			this.EndOfMessage = result.EndOfMessage;
 			this.next = 0;
 			this.limit = result.Count;
+		}
+
+		public virtual async ValueTask<byte[]> ReadWholeMessage(CancellationToken cancellationToken) {
+			List<byte> bytes = new List<byte>();
+
+			do {
+				// update the internal buffer if there is no more data on it
+				if (this.limit <= this.next) {
+					await ReceiveAsync(cancellationToken);
+				}
+
+				// add data on the buffer to the bytes list
+				int len = this.limit - this.next;
+				if (0 < len) {
+					bytes.AddRange(new ArraySegment<byte>(this.buffer, this.next, len));
+					this.next += len;
+				}
+			} while (this.EndOfMessage == false);
+
+			return bytes.ToArray();
 		}
 
 		#endregion

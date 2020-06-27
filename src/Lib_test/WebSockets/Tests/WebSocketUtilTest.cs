@@ -15,7 +15,7 @@ namespace IMKK.WebSockets.Tests {
 
 		[Fact(DisplayName= "ReceiveJson/SendJson")]
 		public async void JsonTest() {
-			// resources
+			// arrange
 			object? sample_null = null;
 			bool sample_boolean = true;
 			double sample_number = 123.45;
@@ -30,55 +30,46 @@ namespace IMKK.WebSockets.Tests {
 			List<object> actual_array = null!;
 			Dictionary<string, object> actual_object = null!;
 
-			using (HttpListener listener = WebSocketsTestUtil.StartListening()) {
-				async Task server() {
-					using (WebSocket webSocket = await listener.AcceptWebSocketAsync()) {
-						// communicate JSON values
-						actual_null = webSocket.ReceiveJson<object?>();
-						webSocket.SendJson<bool>(sample_boolean);
-						actual_number = await webSocket.ReceiveJsonAsync<double>();
-						await webSocket.SendJsonAsync<string>(sample_string);
-						actual_array = webSocket.ReceiveJson<List<object>>();
-						webSocket.SendJson<Dictionary<string, object>>(sample_object);
+			// act, assert
+			await WebSocketsTestUtil.RunClientServerAsync(
+				clientProc: async webSocket => {
+					// communicate JSON values
+					webSocket.SendJson<object?>(sample_null);
+					actual_boolean = webSocket.ReceiveJson<bool>();
+					await webSocket.SendJsonAsync<double>(sample_number);
+					actual_string = await webSocket.ReceiveJsonAsync<string>();
+					webSocket.SendJson<List<object>>(sample_array);
+					actual_object = webSocket.ReceiveJson<Dictionary<string, object>>();
 
-						// closing
-						Assert.Throws<EndOfStreamException>(() => {
-							webSocket.ReceiveJson<object>();
-						});
-						await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
-					}
+					// closing
+					await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "bye", CancellationToken.None);
+				},
+				serverProc: async webSocket => {
+					// communicate JSON values
+					actual_null = webSocket.ReceiveJson<object?>();
+					webSocket.SendJson<bool>(sample_boolean);
+					actual_number = await webSocket.ReceiveJsonAsync<double>();
+					await webSocket.SendJsonAsync<string>(sample_string);
+					actual_array = webSocket.ReceiveJson<List<object>>();
+					webSocket.SendJson<Dictionary<string, object>>(sample_object);
+
+					// closing
+					Assert.Throws<EndOfStreamException>(() => {
+						webSocket.ReceiveJson<object>();
+					});
+					await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
 				}
+			);
 
-				Task serverTask = Task.Run(server);
-				try {
-					using (ClientWebSocket webSocket = await listener.ConnectWebSocketAsync()) {
-						// communicate JSON values
-						webSocket.SendJson<object?>(sample_null);
-						actual_boolean = webSocket.ReceiveJson<bool>();
-						await webSocket.SendJsonAsync<double>(sample_number);
-						actual_string = await webSocket.ReceiveJsonAsync<string>();
-						webSocket.SendJson<List<object>>(sample_array);
-						actual_object = webSocket.ReceiveJson<Dictionary<string, object>>();
-
-						// closing
-						await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "bye", CancellationToken.None);
-						serverTask.Sync();
-					}
-				} finally {
-					listener.Stop();
-					serverTask.Sync();
-				}
-
-				// assert
-				Assert.Null(actual_null);
-				Assert.Equal(sample_boolean, actual_boolean);
-				Assert.Equal(sample_number, actual_number);
-				Assert.Equal(sample_string, actual_string);
-				Assert.Equal(sample_array, actual_array);
-				int count = actual_object.Count;
-				Assert.Equal(1, count);
-				Assert.Equal(true, actual_object["OK?"]);
-			}
+			// assert
+			Assert.Null(actual_null);
+			Assert.Equal(sample_boolean, actual_boolean);
+			Assert.Equal(sample_number, actual_number);
+			Assert.Equal(sample_string, actual_string);
+			Assert.Equal(sample_array, actual_array);
+			int count = actual_object.Count;
+			Assert.Equal(1, count);
+			Assert.Equal(true, actual_object["OK?"]);
 		}
 
 		#endregion
