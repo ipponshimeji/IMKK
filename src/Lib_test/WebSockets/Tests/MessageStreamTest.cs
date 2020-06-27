@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Net;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,7 +17,7 @@ namespace IMKK.WebSockets.Tests {
 				// receiving a close request cause an EndOfStreamException exception 
 				using (ReceiveMessageStream stream = new ReceiveMessageStream(webSocket)) {
 					try {
-						await stream.ReceiveMessageAsync();
+						await stream.ReadAllAsync();
 					} catch (EndOfStreamException) {
 						// assert
 						Assert.Equal(WebSocketMessageType.Close, stream.MessageType);
@@ -50,7 +49,7 @@ namespace IMKK.WebSockets.Tests {
 			// act, assert
 			await RunClientServerAsync(
 				clientProc: async (WebSocket webSocket) => {
-					// RT(1) client->server: binary, simple
+					// RT(1) client->server: binary, simple; ReadAsync/WriteAsync
 					// This case do not cause buffer refill.
 					using (SendMessageStream stream = new SendMessageStream(webSocket, WebSocketMessageType.Binary)) {
 						// do not cause buffer refill.
@@ -62,13 +61,13 @@ namespace IMKK.WebSockets.Tests {
 					// do not close the web socket after the stream is disposed
 					Assert.Equal(WebSocketState.Open, webSocket.State);
 
-					// RT(1) server->client: binary, buffer refill
+					// RT(1) server->client: binary, buffer refill; ReadAsync/WriteAsync
 					// This case cause buffer refill.
 					using (ReceiveMessageStream stream = new ReceiveMessageStream(webSocket, refillTestBufLen)) {
 						// receive the whole message by multiple receive operations
 						int stepLen = 18;   // read length at a time
 						Debug.Assert(stepLen < refillTestBufLen);
-						List<byte> actual = await stream.ReceiveMessageAsync(stepLen);
+						List<byte> actual = await stream.ReadAllAsync(stepLen);
 
 						// assert
 						Assert.Equal(refillTestBufLen, stream.BufferSize);
@@ -76,7 +75,7 @@ namespace IMKK.WebSockets.Tests {
 						Assert.Equal(longSample, actual);
 					}
 
-					// RT(2) client->server: text
+					// RT(2) client->server: text; Read/Write
 					using (SendMessageStream stream = new SendMessageStream(webSocket, WebSocketMessageType.Text)) {
 						// send the whole message synchronously
 						stream.Write(textSample, 0, textSample.Length); // non-async version
@@ -90,7 +89,7 @@ namespace IMKK.WebSockets.Tests {
 						Assert.False(stream.CanSeek);
 
 						// receive the whole message
-						List<byte> actual = await stream.ReceiveMessageAsync();
+						List<byte> actual = await stream.ReadAllAsync();
 
 						// assert
 						Assert.Equal(ReceiveMessageStream.DefaultBufferSize, stream.BufferSize);
@@ -102,14 +101,14 @@ namespace IMKK.WebSockets.Tests {
 					await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "bye", CancellationToken.None);
 				},
 				serverProc: async (WebSocket webSocket) => {
-					// RT(1) client->server: binary, simple
+					// RT(1) client->server: binary, simple; ReadAsync/WriteAsync
 					// This case do not cause buffer refill.
 					Debug.Assert(simpleSample.Length < ReceiveMessageStream.DefaultBufferSize);
 					using (ReceiveMessageStream stream = new ReceiveMessageStream(webSocket)) {
 						// read the whole message at once
 						int stepLen = 64;
 						Debug.Assert(simpleSample.Length < stepLen);
-						List<byte> actual = await stream.ReceiveMessageAsync(stepLen);
+						List<byte> actual = await stream.ReadAllAsync(stepLen);
 
 						// assert
 						Assert.Equal(ReceiveMessageStream.DefaultBufferSize, stream.BufferSize);
@@ -119,7 +118,7 @@ namespace IMKK.WebSockets.Tests {
 					// do not close the web socket after the stream is disposed
 					Assert.Equal(WebSocketState.Open, webSocket.State);
 
-					// RT(1) server->client: binary, buffer refill
+					// RT(1) server->client: binary, buffer refill; ReadAsync/WriteAsync
 					// This case causes buffer refill.
 					using (SendMessageStream stream = new SendMessageStream(webSocket, WebSocketMessageType.Binary)) {
 						int len = 40;
@@ -132,10 +131,10 @@ namespace IMKK.WebSockets.Tests {
 						await stream.WriteAsync(longSample, len, longSample.Length - len);
 					}
 
-					// RT(2) client->server: text
+					// RT(2) client->server: text; Read/Write
 					using (ReceiveMessageStream stream = new ReceiveMessageStream(webSocket)) {
 						// read the whole message synchronously
-						List<byte> actual = stream.ReceiveMessage();    // non-async version
+						List<byte> actual = stream.ReadAll();    // non-async version
 
 						// assert
 						Assert.Equal(ReceiveMessageStream.DefaultBufferSize, stream.BufferSize);
@@ -239,18 +238,18 @@ namespace IMKK.WebSockets.Tests {
 						// Write()
 						Assert.Throws<NotSupportedException>(() => { stream.Write(new byte[4], 0, 4); });
 
-						List<byte> actual = await stream.ReceiveMessageAsync();
+						List<byte> actual = await stream.ReadAllAsync();
 						Assert.Empty(actual);
 					}
 
-					// closing
+					// close
 					await Assert.ThrowsAsync<EndOfStreamException>(async () => {
 						// bufferSize: the min value
 						using (ReceiveMessageStream stream = new ReceiveMessageStream(webSocket, ReceiveMessageStream.MinBufferSize)) {
 							Assert.Equal(ReceiveMessageStream.MinBufferSize, stream.BufferSize);
 
 							try {
-								await stream.ReceiveMessageAsync();
+								await stream.ReadAllAsync();
 							} catch (EndOfStreamException) {
 								// assert
 								Assert.Equal(WebSocketMessageType.Close, stream.MessageType);

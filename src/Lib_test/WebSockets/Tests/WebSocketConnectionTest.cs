@@ -142,12 +142,12 @@ namespace IMKK.WebSockets.Tests {
 					clientProc: async connection => {
 						// RT(1) client->server
 						using (Stream stream = connection.SendMessage(WebSocketMessageType.Binary)) {
-							stream.Write(simpleSample, 0, simpleSample.Length);
+							await stream.WriteAsync(simpleSample, 0, simpleSample.Length);
 						}
 
 						// RT(1) server->client
 						using (ReceiveMessageStream stream = await connection.ReceiveMessageAsync()) {
-							List<byte> actual = WebSocketsTestUtil.ReceiveMessage(stream);
+							List<byte> actual = await stream.ReadAllAsync();
 
 							Assert.Equal(WebSocketMessageType.Binary, stream.MessageType);
 							Assert.Equal(longSample, actual);
@@ -155,12 +155,12 @@ namespace IMKK.WebSockets.Tests {
 
 						// RT(2) client->server
 						using (Stream stream = connection.SendMessage(WebSocketMessageType.Text)) {
-							stream.Write(textSample, 0, textSample.Length);
+							await stream.WriteAsync(textSample, 0, textSample.Length);
 						}
 
 						// RT(2) server->client
 						using (ReceiveMessageStream stream = await connection.ReceiveMessageAsync()) {
-							List<byte> actual = WebSocketsTestUtil.ReceiveMessage(stream);
+							List<byte> actual = await stream.ReadAllAsync();
 
 							Assert.Equal(WebSocketMessageType.Binary, stream.MessageType);
 							Assert.Empty(actual);
@@ -171,7 +171,7 @@ namespace IMKK.WebSockets.Tests {
 					serverProc: async connection => {
 						// RT(1) client->server
 						using (ReceiveMessageStream stream = await connection.ReceiveMessageAsync()) {
-							List<byte> actual = WebSocketsTestUtil.ReceiveMessage(stream);
+							List<byte> actual = await stream.ReadAllAsync();
 
 							Assert.Equal(WebSocketMessageType.Binary, stream.MessageType);
 							Assert.Equal(simpleSample, actual);
@@ -179,12 +179,12 @@ namespace IMKK.WebSockets.Tests {
 
 						// RT(1) server->client
 						using (Stream stream = connection.SendMessage(WebSocketMessageType.Binary)) {
-							stream.Write(longSample, 0, longSample.Length);
+							await stream.WriteAsync(longSample, 0, longSample.Length);
 						}
 
 						// RT(2) client->server
 						using (ReceiveMessageStream stream = await connection.ReceiveMessageAsync()) {
-							List<byte> actual = WebSocketsTestUtil.ReceiveMessage(stream);
+							List<byte> actual = await stream.ReadAllAsync();
 
 							Assert.Equal(WebSocketMessageType.Text, stream.MessageType);
 							Assert.Equal(textSample, actual);
@@ -207,9 +207,7 @@ namespace IMKK.WebSockets.Tests {
 				string asciiSample = "ABCED";
 				string nonAsciiSample = "‚ ‚¢‚¤‚¦‚¨";
 				string encodingSample = "”L";	// U+732B
-				byte[] encodingSampleBytes_utf8 = new byte[] { 0xE7, 0x8C, 0xAB };
-				byte[] encodingSampleBytes_utf16be = new byte[] { 0x73, 0x2B };
-				Encoding utf16be = new UnicodeEncoding(bigEndian: true, byteOrderMark: false);
+				byte[] encodingSampleBytes = new byte[] { 0xE7, 0x8C, 0xAB };
 
 				// act, assert
 				await RunClientServerAsync(
@@ -225,17 +223,17 @@ namespace IMKK.WebSockets.Tests {
 							Assert.Equal(actual, nonAsciiSample);
 						}
 
-						// RT(2) client->server: SendTextMessage with UTF-8 encoding
-						using (StreamWriter writer = connection.SendTextMessage(null)) {
+						// RT(2) client->server: SendTextMessage encoding
+						using (StreamWriter writer = connection.SendTextMessage()) {
 							writer.Write(encodingSample);
 						}
 
-						// RT(2) server->client: SendTextAsync with UTF-16 BE encoding
+						// RT(2) server->client: SendTextAsync encoding
 						using (ReceiveMessageStream stream = await connection.ReceiveMessageAsync()) {
-							List<byte> actual = WebSocketsTestUtil.ReceiveMessage(stream);
+							List<byte> actual = await stream.ReadAllAsync();
 
 							Assert.Equal(WebSocketMessageType.Text, stream.MessageType);
-							Assert.Equal(encodingSampleBytes_utf16be, actual);
+							Assert.Equal(encodingSampleBytes, actual);
 						}
 
 						await connection.CloseAsync();
@@ -251,18 +249,17 @@ namespace IMKK.WebSockets.Tests {
 						// RT(1) server->client: SendTextAsync and ReceiveTextAsync
 						await connection.SendTextAsync(nonAsciiSample);
 
-
-						// RT(2) client->server: SendTextMessage with UTF-8 encoding
+						// RT(2) client->server: SendTextMessage encoding
 						using (ReceiveMessageStream stream = await connection.ReceiveMessageAsync()) {
-							List<byte> actual = WebSocketsTestUtil.ReceiveMessage(stream);
+							List<byte> actual = await stream.ReadAllAsync();
 
 							Assert.Equal(WebSocketMessageType.Text, stream.MessageType);
-							Assert.Equal(encodingSampleBytes_utf8, actual);
+							Assert.Equal(encodingSampleBytes, actual);
 						}
 						WebSocketState state = connection.State;
 
-						// RT(2) server->client: SendTextAsync with UTF-16 BE encoding
-						await connection.SendTextAsync(encodingSample, utf16be);
+						// RT(2) server->client: SendTextAsync encoding
+						await connection.SendTextAsync(encodingSample);
 
 						// close
 						await ExpectCloseAsync(connection);

@@ -99,7 +99,7 @@ namespace IMKK.WebSockets {
 		#region data
 
 		// UTF8 without BOM
-		public static readonly Encoding DefaultTextEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+		public static readonly Encoding TextMessageEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
 
 
 		private object instanceLocker = new object();
@@ -311,32 +311,22 @@ namespace IMKK.WebSockets {
 			return stream;
 		}
 
-		public StreamWriter SendTextMessage(Encoding? encoding = null) {
-			// check argument
-			if (encoding == null) {
-				encoding = DefaultTextEncoding;
-			}
-
-			return new StreamWriter(SendMessage(WebSocketMessageType.Text), encoding);
+		public StreamWriter SendTextMessage() {
+			return new StreamWriter(SendMessage(WebSocketMessageType.Text), TextMessageEncoding);
 		}
 
-		public async ValueTask<StreamReader> ReceiveTextMessageAsync(Encoding? encoding = null) {
-			// check argument
-			if (encoding == null) {
-				encoding = DefaultTextEncoding;
-			}
-
-			return new StreamReader(await ReceiveMessageAsync(), encoding);
+		public async ValueTask<StreamReader> ReceiveTextMessageAsync() {
+			return new StreamReader(await ReceiveMessageAsync(), TextMessageEncoding);
 		}
 
-		public async ValueTask SendTextAsync(string? text, Encoding? encoding = null) {
-			using (StreamWriter writer = SendTextMessage(encoding)) {
+		public async ValueTask SendTextAsync(string? text) {
+			using (StreamWriter writer = SendTextMessage()) {
 				await writer.WriteAsync(text);
 			}
 		}
 
-		public async ValueTask<string> ReceiveTextAsync(Encoding? encoding = null) {
-			using (StreamReader reader = await ReceiveTextMessageAsync(encoding)) {
+		public async ValueTask<string> ReceiveTextAsync() {
+			using (StreamReader reader = await ReceiveTextMessageAsync()) {
 				return await reader.ReadToEndAsync();
 			}
 		}

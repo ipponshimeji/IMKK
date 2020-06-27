@@ -147,7 +147,7 @@ namespace IMKK.WebSockets.Tests {
 			return listener.Prefixes.First().Replace("http:", "ws:");
 		}
 
-		public static async ValueTask<List<byte>> ReceiveMessageAsync(this ReceiveMessageStream stream, int stepLength = DefaultStepLength) {
+		public static async ValueTask<List<byte>> ReadAllAsync(this ReceiveMessageStream stream, int stepLength = DefaultStepLength) {
 			// check argument
 			if (stream == null) {
 				throw new ArgumentNullException(nameof(stream));
@@ -170,7 +170,7 @@ namespace IMKK.WebSockets.Tests {
 			return message;
 		}
 
-		public static List<byte> ReceiveMessage(this ReceiveMessageStream stream, int stepLength = DefaultStepLength) {
+		public static List<byte> ReadAll(this ReceiveMessageStream stream, int stepLength = DefaultStepLength) {
 			// check argument
 			if (stream == null) {
 				throw new ArgumentNullException(nameof(stream));
