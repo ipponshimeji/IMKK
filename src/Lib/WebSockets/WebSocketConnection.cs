@@ -3,7 +3,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.WebSockets;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -24,7 +23,7 @@ namespace IMKK.WebSockets {
 
 			#region creation & disposal
 
-			public InternalReceiveMessageStream(WebSocketConnection owner, WebSocket webSocket, int bufferSize = DefaultBufferSize) : base(webSocket) {
+			public InternalReceiveMessageStream(WebSocketConnection owner, WebSocket webSocket, int bufferSize = DefaultBufferSize) : base(webSocket, bufferSize) {
 				// check argument
 				if (owner == null) {
 					throw new ArgumentNullException(nameof(owner));
@@ -129,6 +128,8 @@ namespace IMKK.WebSockets {
 
 		public WebSocketState State => (webSocket == null ? WebSocketState.None : webSocket.State);
 
+		public bool Receiving => (this.receiveTask != null);
+
 		#endregion
 
 
@@ -162,12 +163,9 @@ namespace IMKK.WebSockets {
 			WebSocket? ws;
 
 			lock (this.instanceLocker) {
-				sendStream = this.currentSendStream;
-				this.currentSendStream = null;
-				receiveStream = this.currentReceiveStream;
-				this.currentReceiveStream = null;
-				ws = this.webSocket;
-				this.webSocket = null;
+				sendStream = Interlocked.Exchange(ref this.currentSendStream, null);
+				receiveStream = Interlocked.Exchange(ref this.currentReceiveStream, null);
+				ws = Interlocked.Exchange(ref this.webSocket, null);
 			}
 
 			if (sendStream != null) {
@@ -210,7 +208,7 @@ namespace IMKK.WebSockets {
 			TimeSpan actualKeepAliveInterval = keepAliveInterval ?? WebSocket.DefaultKeepAliveInterval;
 			WebSocketConnection connection = new WebSocketConnection((await context.AcceptWebSocketAsync(subProtocol, actualKeepAliveInterval)).WebSocket);
 			if (start) {
-				connection.Start();
+				connection.StartReceiving();
 			}
 
 			return connection;
@@ -228,7 +226,7 @@ namespace IMKK.WebSockets {
 				await ws.ConnectAsync(uri, cancellationToken);
 				WebSocketConnection connection = new WebSocketConnection(ws, receiveBufferSize);
 				if (start) {
-					connection.Start();
+					connection.StartReceiving();
 				}
 				return connection;
 			} catch {
@@ -251,7 +249,7 @@ namespace IMKK.WebSockets {
 			return webSocket;
 		}
 
-		public void Start() {
+		public void StartReceiving() {
 			// check state
 			WebSocket webSocket = EnsureNotDisposed();
 			if (webSocket.State != WebSocketState.Open) {
@@ -281,6 +279,7 @@ namespace IMKK.WebSockets {
 
 				// create a stream to send a message
 				WebSocket ws = EnsureNotDisposed();
+				// TODO: user instance cache
 				InternalSendMessageStream stream = new InternalSendMessageStream(this, ws, messageType);
 				this.currentSendStream = stream;
 				return stream;
@@ -288,22 +287,27 @@ namespace IMKK.WebSockets {
 		}
 
 		public async Task<ReceiveMessageStream> ReceiveMessageAsync() {
+			static InvalidOperationException createConnectionClosedException() {
+				return new InvalidOperationException("The connection has been closed.");
+			}
+
 			// check state
 			Task<InternalReceiveMessageStream>? receiveTask;
 			lock (this.instanceLocker) {
 				receiveTask = this.receiveTask;
 			}
 			if (receiveTask == null) {
-				throw new InvalidOperationException("The connection has been closed.");
+				throw createConnectionClosedException();
 			}
 
+			// wait for receiving a message
 			InternalReceiveMessageStream stream = await receiveTask;
 			lock (this.instanceLocker) {
 				if (this.currentReceiveStream != null) {
 					throw new InvalidOperationException("Currently another message is being received on this connection.");
 				}
 				if (this.receiveTask == null) {
-					throw new InvalidOperationException("The connection has been closed.");
+					throw createConnectionClosedException();
 				}
 				this.currentReceiveStream = stream;
 			}
@@ -375,6 +379,7 @@ namespace IMKK.WebSockets {
 				}
 			}
 
+			// start the task to receive a message
 			Task<InternalReceiveMessageStream> task;
 			lock (this.instanceLocker) {
 				// check state

@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.WebSockets;
-using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -90,14 +90,19 @@ namespace IMKK.WebSockets.Tests {
 						// receiveBufferSize: min
 						receiveBufferSize = ReceiveMessageStream.MinBufferSize;
 						using (WebSocketConnection connection = new WebSocketConnection(webSocket, receiveBufferSize)) {
-							await connection.CloseAsync();
-							try {
-								using (ReceiveMessageStream stream = await connection.ReceiveMessageAsync()) {
-									Assert.Equal(ReceiveMessageStream.MinBufferSize, stream.BufferSize);
-								}
-							} catch (EndOfStreamException) {
-								// continue
+							connection.StartReceiving();
+
+							// RT(1) client->server
+							await connection.SendTextAsync("ABC");
+
+							// RT(1) server->client
+							using (ReceiveMessageStream stream = await connection.ReceiveMessageAsync()) {
+								await stream.ReadAllAsync();
+
+								Assert.Equal(ReceiveMessageStream.MinBufferSize, stream.BufferSize);
 							}
+
+							await connection.CloseAsync();
 						}
 					},
 					serverProc: async webSocket => {
@@ -112,6 +117,18 @@ namespace IMKK.WebSockets.Tests {
 						// receiveBufferSize: max
 						receiveBufferSize = ReceiveMessageStream.MaxBufferSize;
 						using (WebSocketConnection connection = new WebSocketConnection(webSocket, receiveBufferSize)) {
+							connection.StartReceiving();
+
+							// RT(1) client->server
+							using (ReceiveMessageStream stream = await connection.ReceiveMessageAsync()) {
+								await stream.ReadAllAsync();
+
+								Assert.Equal(ReceiveMessageStream.MaxBufferSize, stream.BufferSize);
+							}
+
+							// RT(1) server->client
+							await connection.SendTextAsync("XYZ");
+
 							// close
 							await ExpectCloseAsync(connection);
 						}
@@ -134,31 +151,31 @@ namespace IMKK.WebSockets.Tests {
 			public async void Basic() {
 				// arrange
 				byte[] simpleSample = WebSocketsTestUtil.GetSimpleSample();
-				byte[] longSample = WebSocketsTestUtil.GetLongSample();
+				byte[] anotherSample = WebSocketsTestUtil.GetLongSample();
 				byte[] textSample = WebSocketsTestUtil.GetTextSampleBytes();
 
 				// act, assert
 				await RunClientServerAsync(
 					clientProc: async connection => {
-						// RT(1) client->server
+						// RT(1) client->server: binary simple
 						using (Stream stream = connection.SendMessage(WebSocketMessageType.Binary)) {
 							await stream.WriteAsync(simpleSample, 0, simpleSample.Length);
 						}
 
-						// RT(1) server->client
+						// RT(1) server->client: binary another
 						using (ReceiveMessageStream stream = await connection.ReceiveMessageAsync()) {
 							List<byte> actual = await stream.ReadAllAsync();
 
 							Assert.Equal(WebSocketMessageType.Binary, stream.MessageType);
-							Assert.Equal(longSample, actual);
+							Assert.Equal(anotherSample, actual);
 						}
 
-						// RT(2) client->server
+						// RT(2) client->server: text
 						using (Stream stream = connection.SendMessage(WebSocketMessageType.Text)) {
 							await stream.WriteAsync(textSample, 0, textSample.Length);
 						}
 
-						// RT(2) server->client
+						// RT(2) server->client: empty
 						using (ReceiveMessageStream stream = await connection.ReceiveMessageAsync()) {
 							List<byte> actual = await stream.ReadAllAsync();
 
@@ -169,7 +186,7 @@ namespace IMKK.WebSockets.Tests {
 						await connection.CloseAsync();
 					},
 					serverProc: async connection => {
-						// RT(1) client->server
+						// RT(1) client->server: binary simple
 						using (ReceiveMessageStream stream = await connection.ReceiveMessageAsync()) {
 							List<byte> actual = await stream.ReadAllAsync();
 
@@ -177,12 +194,12 @@ namespace IMKK.WebSockets.Tests {
 							Assert.Equal(simpleSample, actual);
 						}
 
-						// RT(1) server->client
+						// RT(1) server->client: binary another
 						using (Stream stream = connection.SendMessage(WebSocketMessageType.Binary)) {
-							await stream.WriteAsync(longSample, 0, longSample.Length);
+							await stream.WriteAsync(anotherSample, 0, anotherSample.Length);
 						}
 
-						// RT(2) client->server
+						// RT(2) client->server: text
 						using (ReceiveMessageStream stream = await connection.ReceiveMessageAsync()) {
 							List<byte> actual = await stream.ReadAllAsync();
 
@@ -190,7 +207,7 @@ namespace IMKK.WebSockets.Tests {
 							Assert.Equal(textSample, actual);
 						}
 
-						// RT(2) server->client
+						// RT(2) server->client: empty
 						using (Stream stream = connection.SendMessage(WebSocketMessageType.Binary)) {
 							// send empty message
 						}
@@ -236,6 +253,18 @@ namespace IMKK.WebSockets.Tests {
 							Assert.Equal(encodingSampleBytes, actual);
 						}
 
+						// RT(3) client->server: ReceiveTextMessageAsync encoding
+						using (Stream stream = connection.SendMessage(WebSocketMessageType.Text)) {
+							await stream.WriteAsync(encodingSampleBytes, 0, encodingSampleBytes.Length);
+						}
+
+						// RT(3) server->client: ReceiveTextAsync encoding
+						{
+							string actual = await connection.ReceiveTextAsync();
+
+							Assert.Equal(encodingSample, actual);
+						}
+
 						await connection.CloseAsync();
 					},
 					serverProc: async connection => {
@@ -260,6 +289,18 @@ namespace IMKK.WebSockets.Tests {
 
 						// RT(2) server->client: SendTextAsync encoding
 						await connection.SendTextAsync(encodingSample);
+
+						// RT(3) client->server: ReceiveTextMessageAsync encoding
+						using (StreamReader reader = await connection.ReceiveTextMessageAsync()) {
+							String actual = reader.ReadToEnd();
+
+							Assert.Equal(encodingSample, actual);
+						}
+
+						// RT(3) server->client: ReceiveTextAsync encoding
+						using (Stream stream = connection.SendMessage(WebSocketMessageType.Text)) {
+							await stream.WriteAsync(encodingSampleBytes, 0, encodingSampleBytes.Length);
+						}
 
 						// close
 						await ExpectCloseAsync(connection);
@@ -320,6 +361,78 @@ namespace IMKK.WebSockets.Tests {
 				int count = actual_object.Count;
 				Assert.Equal(1, count);
 				Assert.Equal(true, actual_object["OK?"]);
+			}
+
+			[Fact(DisplayName = "errors")]
+			public async void Errors() {
+				// arrange
+				byte[] dummySample = WebSocketsTestUtil.GetSimpleSample();
+
+				// act and assert
+				using (ManualResetEventSlim signal = new ManualResetEventSlim(initialState: false)) {
+					await RunClientServerAsync(
+						clientProc: async connection => {
+							// client->server: binary simple
+							using (Stream stream = connection.SendMessage(WebSocketMessageType.Binary)) {
+								// overlapped sending
+								// binary
+								Assert.Throws<InvalidOperationException>(() => {
+									using (Stream overlappedStream = connection.SendMessage(WebSocketMessageType.Binary)) {
+									}
+								});
+
+								// text
+								await Assert.ThrowsAsync<InvalidOperationException>(async () => {
+									await connection.SendTextAsync("abc");
+								});
+
+								// json
+								await Assert.ThrowsAsync<InvalidOperationException>(async () => {
+									await connection.SendJsonAsync<bool>(true);
+								});
+
+								// do not data at once
+								// The receiver in the server may receive and buffer the whole data and
+								// the WebSocketConnection may unregister the receiving stream from
+								// "the current receiving stream".
+								// It prevents from testing overlapped receiving in the server.
+								await stream.WriteAsync(dummySample, 0, dummySample.Length);
+								signal.Wait();
+								await stream.WriteAsync(dummySample, 0, dummySample.Length);
+							}
+
+							// close
+							await connection.CloseAsync();
+						},
+						serverProc: async connection => {
+							// RT(1) client->server: binary simple
+							using (ReceiveMessageStream stream = await connection.ReceiveMessageAsync()) {
+								// overlapped receiving
+								// binary
+								await Assert.ThrowsAsync<InvalidOperationException>(async () => {
+									using (ReceiveMessageStream overlappedStream = await connection.ReceiveMessageAsync()) {
+									}
+								});
+
+								// text
+								await Assert.ThrowsAsync<InvalidOperationException>(async () => {
+									await connection.ReceiveTextAsync();
+								});
+
+								// binary
+								await Assert.ThrowsAsync<InvalidOperationException>(async () => {
+									await connection.ReceiveJsonAsync<bool>();
+								});
+
+								signal.Set();
+								await stream.ReadAllAsync();
+							}
+
+							// close
+							await ExpectCloseAsync(connection);
+						}
+					);
+				}
 			}
 
 			#endregion
