@@ -9,7 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 
-namespace IMKK.WebSockets.Tests {
+namespace IMKK.WebSockets.Test {
 	public static class WebSocketsTestUtil {
 		#region constants
 

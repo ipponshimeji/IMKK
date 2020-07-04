@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using Xunit;
 
 
-namespace IMKK.WebSockets.Tests {
+namespace IMKK.WebSockets.Test {
 	public class WebSocketConnectionTest {
 		#region utilities
 
