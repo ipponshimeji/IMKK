@@ -2,7 +2,7 @@
 using System.Runtime.Serialization;
 
 
-namespace IMKK.Communications {
+namespace IMKK.Communication {
 	public class NegotiateRequest {
 		#region types
 
