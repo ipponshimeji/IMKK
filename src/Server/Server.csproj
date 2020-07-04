@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <AssemblyName>IMKK.Server</AssemblyName>
+    <RootNamespace>IMKK</RootNamespace>
+    <Nullable>enable</Nullable>
+    <Authors>Takamasa Uramoto</Authors>
+    <Product>IMKK (Ittan Mochi Kaette Kentoushimasu)</Product>
+    <Copyright>Copyright 2020 Takamasa Uramoto</Copyright>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Common\Common.csproj" />
+  </ItemGroup>
+
+</Project>

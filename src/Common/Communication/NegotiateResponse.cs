@@ -6,7 +6,7 @@ namespace IMKK.Communication {
 	public class NegotiateResponse {
 		#region types
 
-		public static class DataNames {
+		public static class PropertyNames {
 			#region constants
 
 			public const string Status = "status";
@@ -24,7 +24,7 @@ namespace IMKK.Communication {
 		[IgnoreDataMember]
 		public NegotiateStatus Status { get; set; } = NegotiateStatus.Undefined;
 
-		[DataMember(Name = DataNames.Message)]
+		[DataMember(Name = PropertyNames.Message)]
 		public string? Message { get; set; } = null;
 
 		#endregion
@@ -35,7 +35,7 @@ namespace IMKK.Communication {
 		/// <summary>
 		/// The adapter property for Status to serialize the value of Status in int.
 		/// </summary>
-		[DataMember(Name = DataNames.Status)]
+		[DataMember(Name = PropertyNames.Status)]
 		public int StatusValue {
 			get {
 				return (int)this.Status;

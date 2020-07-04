@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-    <AssemblyName>IMKK</AssemblyName>
+    <AssemblyName>IMKK.Common</AssemblyName>
     <RootNamespace>IMKK</RootNamespace>
     <Nullable>enable</Nullable>
     <Authors>Takamasa Uramoto</Authors>

@@ -2,11 +2,11 @@
 using System.Runtime.Serialization;
 
 
-namespace IMKK.Communication {
-	public class NegotiateRequest {
+namespace IMKK.Server.Storage {
+	public class ChannelInfo {
 		#region types
 
-		public static class DataNames {
+		public static class PropertyNames {
 			#region constants
 
 			public const string Key = "key";
@@ -19,7 +19,7 @@ namespace IMKK.Communication {
 
 		#region data
 
-		[DataMember(Name = DataNames.Key)]
+		[DataMember(Name = PropertyNames.Key)]
 		public string? Key { get; set; } = null;
 
 		#endregion
@@ -27,10 +27,10 @@ namespace IMKK.Communication {
 
 		#region creation
 
-		public NegotiateRequest() {
+		public ChannelInfo() {
 		}
 
-		public NegotiateRequest(string? key) {
+		public ChannelInfo(string? key) {
 			// check argument
 			// key can be null
 
