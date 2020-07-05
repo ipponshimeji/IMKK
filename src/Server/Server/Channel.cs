@@ -7,17 +7,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using IMKK.WebSockets;
 using IMKK.Server.Storage;
-
+using IMKK.Communication;
 
 namespace IMKK.Server {
 	public class Channel: IDisposable {
-		#region constants
-
-		public const int DefaultMaxConnectionCount = 8;
-
-		#endregion
-
-
 		#region data
 
 		private readonly object instanceLocker = new object();
@@ -25,7 +18,7 @@ namespace IMKK.Server {
 
 		public readonly string Key;
 
-		private int maxConnectionCount = DefaultMaxConnectionCount;
+		public readonly int MaxConnectionCount;
 
 		private int connectionCount = 0;
 
@@ -40,18 +33,25 @@ namespace IMKK.Server {
 
 		#region creation & disposal
 
-		public Channel(ChannelInfo info) {
+		public Channel(ChannelConfig config) {
 			// check argument
-			if (info == null) {
-				throw new ArgumentNullException(nameof(info));
+			if (config == null) {
+				throw new ArgumentNullException(nameof(config));
 			}
-			string? key = info.Key;
+
+			string? key = config.Key;
 			if (key == null) {
-				throw new ArgumentNullException(nameof(info.Key));
+				throw new ArgumentNullException(nameof(config.Key));
+			}
+
+			int maxConnectionCount = config.MaxConnectionCount;
+			if (maxConnectionCount < 0) {
+				throw new ArgumentOutOfRangeException(nameof(config.MaxConnectionCount));
 			}
 
 			// initialize member
 			this.Key = key;
+			this.MaxConnectionCount = maxConnectionCount;
 		}
 
 		public virtual void Dispose() {
@@ -62,36 +62,78 @@ namespace IMKK.Server {
 
 		#region methods
 
-		public void AddConnection(WebSocketConnection connection) {
+		/// <remarks>
+		/// The ownership of the connection is moved to this srever. 
+		/// </remarks>
+		public async Task AddConnectionAsync(WebSocketConnection connection) {
 			// check argument
 			if (connection == null) {
 				throw new ArgumentNullException(nameof(connection));
 			}
-			if (connection.State != WebSocketState.Open) {
-				throw new ArgumentException("It is not open state.", nameof(connection));
-			}
 
-			lock (this.instanceLocker) {
-				// check state
-				if (this.maxConnectionCount <= this.connectionCount) {
-					throw new InvalidOperationException("Too many connections are added.");
+			try {
+				NegotiateResponse response = new NegotiateResponse(NegotiateStatus.Error, NegotiateResponse.StandardMessages.Error);
+
+				// check connection state
+				if (connection.State != WebSocketState.Open) {
+					throw new ArgumentException("It is not open state.", nameof(connection));
 				}
 
-				// queue the connection
-				this.connections.Enqueue(connection);
-				++this.connectionCount;
+				try {
+					// check state
+					lock (this.instanceLocker) {
+						if (this.MaxConnectionCount <= this.connectionCount) {
+							response.Status = NegotiateStatus.TooManyConnection;
+							response.Message = NegotiateResponse.StandardMessages.TooManyConnection;
+							throw new InvalidOperationException(response.Message);
+						}
+						++this.connectionCount;
+					}
+
+					// send the successful negotiate response
+					response.Status = NegotiateStatus.Succeeded;
+					response.Message = null;
+					await connection.SendJsonAsync<NegotiateResponse>(response);
+
+					// add the connection to the queue
+					lock (this.instanceLocker) {
+						// add the connection after send the response,
+						// not to be used before the negotiation completes
+						this.connections.Enqueue(connection);
+					}
+				} catch {
+					// send the failed negotiate response
+					// Note that the response has been sent if response.Status is Succeeded.
+					if (response.Status != NegotiateStatus.Succeeded) {
+						await connection.SendJsonAsync<NegotiateResponse>(response);
+					}
+
+					// roll back the connection count
+					if (response.Status != NegotiateStatus.TooManyConnection) {
+						lock (this.instanceLocker) {
+							--this.connectionCount;
+						}
+					}
+
+					await connection.CloseAsync();
+					throw;
+				}
+			} catch {
+				// TODO: logging
+				connection.Dispose();
+				return;	// end the task
 			}
 		}
 
-		public async ValueTask ProcessMessageAsync(Func<SendMessageStream, ValueTask> sender, Func<ReceiveMessageStream, ValueTask> receiver) {
+		public ValueTask ProcessMessageAsync(Func<SendMessageStream, ValueTask> sender, Func<ReceiveMessageStream, ValueTask> receiver) {
 			throw new NotImplementedException();
 		}
 
-		public async ValueTask<string> ProcessTextAsync(string request, int millisecondsTimeout = Timeout.Infinite, CancellationToken cancellationToken = default(CancellationToken)) {
+		public ValueTask<string> ProcessTextAsync(string request, int millisecondsTimeout = Timeout.Infinite, CancellationToken cancellationToken = default(CancellationToken)) {
 			throw new NotImplementedException();
 		}
 
-		public async ValueTask<TResponse> ProcessJsonAsync<TRequest, TResponse>(TRequest request, int millisecondsTimeout = Timeout.Infinite, CancellationToken cancellationToken = default(CancellationToken)) {
+		public ValueTask<TResponse> ProcessJsonAsync<TRequest, TResponse>(TRequest request, int millisecondsTimeout = Timeout.Infinite, CancellationToken cancellationToken = default(CancellationToken)) {
 			throw new NotImplementedException();
 		}
 

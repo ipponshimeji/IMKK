@@ -34,8 +34,8 @@ namespace IMKK.Server {
 
 			// create channels
 			Dictionary<string, Channel> channels = new Dictionary<string, Channel>();
-			foreach (ChannelInfo info in storage.Channels) {
-				Channel channel = new Channel(info);
+			foreach (ChannelConfig config in storage.Channels) {
+				Channel channel = CreateChannel(config);
 				Debug.Assert(channel.Key != null);
 				channels.Add(channel.Key, channel);
 			}
@@ -63,8 +63,13 @@ namespace IMKK.Server {
 				channels = Interlocked.Exchange(ref this.channels, null);
 			}
 
+			// dispose channels
 			if (channels != null) {
-				// TODO : terminate communications
+				foreach (Channel channel in channels.Values) {
+					TaskUtil.RunningTaskTable.MonitorTask(() => {
+						channel.Dispose();
+					});
+				}
 			}
 		}
 
@@ -73,8 +78,69 @@ namespace IMKK.Server {
 
 		#region methods
 
-		// This method is NTS (Not Thread Safe).
-		// Use it in a lock (this.instanceLocker) scope.
+		/// <remarks>
+		/// The ownership of the webSocket is moved to this srever. 
+		/// </remarks>
+		public async ValueTask NegotiateAndAddConnectionAsync(WebSocket webSocket) {
+			// check arguments
+			if (webSocket == null) {
+				throw new ArgumentNullException(nameof(webSocket));
+			}
+
+			// negotiate and add the web socket to the channel table
+			Channel? channel = null;
+			WebSocketConnection connection = new WebSocketConnection(webSocket);
+			try {
+				NegotiateResponse response = new NegotiateResponse(NegotiateStatus.Error, NegotiateResponse.StandardMessages.Error);
+
+				// receive the negotiate request
+				NegotiateRequest request = await connection.ReceiveJsonAsync<NegotiateRequest>();
+				try {
+					// check the key
+					string? key = request.Key;
+					if (string.IsNullOrEmpty(key) == false) {
+						lock (this.instanceLocker) {
+							channel = FindChannelNTS(key);
+						}
+					}
+					if (channel == null) {
+						response.Status = NegotiateStatus.InvalidKey;
+						response.Message = NegotiateResponse.StandardMessages.InvalidKey;
+						throw new InvalidOperationException(response.Message);
+					}
+				} catch {
+					await connection.SendJsonAsync<NegotiateResponse>(response);
+					await connection.CloseAsync();
+					throw;
+				}
+			} catch {
+				// TODO: logging
+				connection.Dispose();
+				return;		// end the task
+			}
+
+			// add the connection to the channel
+			// The channel sends the negotiate response.
+			// The ownership of the connection is given to the channel.
+			TaskUtil.RunningTaskTable.MonitorTask(channel.AddConnectionAsync(connection));
+		}
+
+		public ValueTask<string> CommunicateTextAsync(string key, string request, int millisecondsTimeout = Timeout.Infinite, CancellationToken cancellationToken = default(CancellationToken)) {
+			return GetChannel(key).ProcessTextAsync(request, millisecondsTimeout, cancellationToken);
+		}
+
+		public ValueTask<TResponse> CommunicateJsonAsync<TRequest, TResponse>(string key, TRequest request, int millisecondsTimeout = Timeout.Infinite, CancellationToken cancellationToken = default(CancellationToken)) {
+			return GetChannel(key).ProcessJsonAsync<TRequest, TResponse>(request, millisecondsTimeout, cancellationToken);
+		}
+
+		#endregion
+
+
+		#region methods - for derived classes
+
+		// xxxNTS methods are NTS (Not Thread Safe).
+		// Use them in a lock (this.instanceLocker) scope.
+
 		protected Dictionary<string, Channel> EnsureNotDisposedNTS() {
 			// check state
 			Dictionary<string, Channel>? channels = this.channels;
@@ -89,84 +155,43 @@ namespace IMKK.Server {
 			return channels;
 		}
 
-
-		public void AddConnection(string key, WebSocketConnection connection) {
-			// check arguments
+		protected Channel? FindChannelNTS(string key) {
+			// check argument
 			if (key == null) {
 				throw new ArgumentNullException(nameof(key));
 			}
-			if (connection == null) {
-				throw new ArgumentNullException(nameof(connection));
-			}
+			
+			// check state
+			Dictionary<string, Channel> channels = EnsureNotDisposedNTS();
 
-			// add the connection to the channel table
+			// get the specified channel
+			Channel? channel;
+			channels.TryGetValue(key, out channel);
+			return channel;
+		}
+
+		protected Channel GetChannelNTS(string key) {
+			// get the specified channel
+			Channel? channel = FindChannelNTS(key);
+			if (channel == null) {
+				throw new InvalidOperationException("The channel of the key is not found.");
+			}
+			return channel;
+		}
+
+		protected Channel GetChannel(string key) {
 			lock (this.instanceLocker) {
-				Channel channel = GetChannel(key);
-				channel.AddConnection(connection);
+				return GetChannelNTS(key);
 			}
-		}
-
-		public async ValueTask NegotiateAndAddConnectionAsync(WebSocket webSocket) {
-			// check arguments
-			if (webSocket == null) {
-				throw new ArgumentNullException(nameof(webSocket));
-			}
-
-			// negotiate and add the web socket to the channel table
-			WebSocketConnection connection = new WebSocketConnection(webSocket);
-			try {
-				NegotiateStatus status = NegotiateStatus.Succeeded;
-				string? message = null;
-
-				NegotiateRequest request = await connection.ReceiveJsonAsync<NegotiateRequest>();
-				try {
-					if (string.IsNullOrEmpty(request.Key)) {
-						status = NegotiateStatus.InvalidKey;
-					} else {
-						AddConnection(request.Key, connection);
-						// TODO: error handling
-					}
-
-				} finally {
-					NegotiateResponse response = new NegotiateResponse(status, message);
-					await connection.SendJsonAsync<NegotiateResponse>(response);
-				}
-			} catch {
-				connection.Dispose();
-				throw;
-			}
-		}
-
-		public ValueTask<string> ProcessTextAsync(string key, string request, int millisecondsTimeout = Timeout.Infinite, CancellationToken cancellationToken = default(CancellationToken)) {
-			return GetChannel(key).ProcessTextAsync(request, millisecondsTimeout, cancellationToken);
-		}
-
-		public ValueTask<TResponse> ProcessJsonAsync<TRequest, TResponse>(string key, TRequest request, int millisecondsTimeout = Timeout.Infinite, CancellationToken cancellationToken = default(CancellationToken)) {
-			return GetChannel(key).ProcessJsonAsync<TRequest, TResponse>(request, millisecondsTimeout, cancellationToken);
 		}
 
 		#endregion
 
 
-		#region privates
+		#region overridables
 
-		private Channel GetChannel(string key) {
-			// check argument
-			if (key == null) {
-				throw new ArgumentNullException(nameof(key));
-			}
-
-			lock (this.instanceLocker) {
-				// check state
-				Dictionary<string, Channel> channels = EnsureNotDisposedNTS();
-
-				// get the specified channel
-				Channel? channel;
-				if (channels.TryGetValue(key, out channel) == false) {
-					throw new InvalidOperationException("The channel of the key is not found.");
-				}
-				return channel;
-			}
+		protected virtual Channel CreateChannel(ChannelConfig config) {
+			return new Channel(config);
 		}
 
 		#endregion

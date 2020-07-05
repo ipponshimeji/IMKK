@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Runtime.Serialization;
-
+using System.Threading.Tasks;
+using IMKK.WebSockets;
 
 namespace IMKK.Communication {
 	public class NegotiateResponse {
@@ -12,6 +13,20 @@ namespace IMKK.Communication {
 			public const string Status = "status";
 
 			public const string Message = "message";
+
+			#endregion
+		}
+
+		public static class StandardMessages {
+			#region constants
+
+			public const string Succeeded = "Succeeded.";
+
+			public const string Error = "Internal error.";
+
+			public const string InvalidKey = "The specified key is invalid.";
+
+			public const string TooManyConnection = "The channel for the specified key has too many connection.";
 
 			#endregion
 		}
