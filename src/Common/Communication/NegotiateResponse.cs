@@ -65,9 +65,6 @@ namespace IMKK.Communication {
 
 		#region creation
 
-		public NegotiateResponse() {
-		}
-
 		public NegotiateResponse(NegotiateStatus status,  string? message) {
 			// check argument
 			// message can be null
@@ -75,6 +72,9 @@ namespace IMKK.Communication {
 			// initialize members
 			this.Status = status;
 			this.Message = message;
+		}
+
+		public NegotiateResponse() : this(NegotiateStatus.Error, StandardMessages.Error) {
 		}
 
 		#endregion
