@@ -5,7 +5,7 @@ using Xunit;
 using IMKK.Testing;
 using System.Diagnostics;
 
-namespace IMKK.Communication.Test {
+namespace IMKK.Communication.Tests {
 	public class NegotiateRequestTest {
 		#region tests
 
