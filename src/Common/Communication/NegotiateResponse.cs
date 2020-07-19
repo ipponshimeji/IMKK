@@ -74,7 +74,7 @@ namespace IMKK.Communication {
 			this.Message = message;
 		}
 
-		public NegotiateResponse() : this(NegotiateStatus.Error, StandardMessages.Error) {
+		public NegotiateResponse() : this(NegotiateStatus.Undefined, null) {
 		}
 
 		#endregion
