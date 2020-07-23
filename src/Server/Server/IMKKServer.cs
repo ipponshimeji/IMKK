@@ -6,10 +6,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using IMKK.WebSockets;
 using IMKK.Communication;
-using IMKK.Server.Storage;
+using IMKK.Server.Configurations;
 
 namespace IMKK.Server {
-	public class IMMKServer: IDisposable {
+	public class IMKKServer: IDisposable {
 		#region data
 
 		private object instanceLocker = new object();
@@ -23,19 +23,19 @@ namespace IMKK.Server {
 
 		#region creation & disposal
 
-		public IMMKServer() {
+		public IMKKServer() {
 		}
 
-		protected virtual void Initialize(IIMKKStorage storage) {
+		protected virtual void Initialize(IIMKKServerConfig config) {
 			// check argument
-			if (storage == null) {
-				throw new ArgumentNullException(nameof(storage));
+			if (config == null) {
+				throw new ArgumentNullException(nameof(config));
 			}
 
 			// create channels
 			Dictionary<string, Channel> channels = new Dictionary<string, Channel>();
-			foreach (ChannelConfig config in storage.Channels) {
-				Channel channel = CreateChannel(config);
+			foreach (ChannelConfig channelConfig in config.Channels) {
+				Channel channel = CreateChannel(channelConfig);
 				Debug.Assert(channel.Key != null);
 				channels.Add(channel.Key, channel);
 			}
@@ -54,6 +54,13 @@ namespace IMKK.Server {
 				this.channels = channels;
 			}
 		}
+
+		public static IMKKServer Create(IIMKKServerConfig config) {
+			IMKKServer server = new IMKKServer();
+			server.Initialize(config);
+			return server;
+		}
+
 
 		public virtual void Dispose() {
 			Dictionary<string, Channel>? channels;
@@ -122,7 +129,7 @@ namespace IMKK.Server {
 			// add the connection to the channel
 			// The channel sends the negotiate response.
 			// The ownership of the connection is given to the channel.
-			TaskUtil.RunningTaskTable.MonitorTask(channel.AddConnectionAsync(connection));
+			TaskUtil.RunningTaskTable.MonitorTask(channel.RegisterConnectionAsync(connection));
 		}
 
 		public ValueTask<string> CommunicateTextAsync(string key, string request, int millisecondsTimeout = Timeout.Infinite, CancellationToken cancellationToken = default(CancellationToken)) {

@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 
 
-namespace IMKK.Server.Storage {
-	public interface IIMKKStorage {
+namespace IMKK.Server.Configurations {
+	public interface IIMKKServerConfig {
 		IEnumerable<ChannelConfig> Channels { get; }
 	}
 }
