@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
+using IMKK.Testing;
 using Xunit;
 
 
@@ -18,7 +19,7 @@ namespace IMKK.WebSockets.Tests {
 		}
 
 		protected static ValueTask<WebSocketConnection> ConnectAsync(HttpListener listener) {
-			return WebSocketConnection.ConnectAsync(new Uri(WebSocketsTestUtil.GetUriForWebSocket(listener)));
+			return WebSocketConnection.ConnectAsync(new Uri(WebSocketsUtil.GetUriForWebSocket(listener)));
 		}
 
 		protected static async ValueTask ExpectCloseAsync(WebSocketConnection connection) {
