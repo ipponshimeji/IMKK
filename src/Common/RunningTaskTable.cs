@@ -39,6 +39,7 @@ namespace IMKK {
 			}
 			if (task.IsCompleted) {
 				// nothing to do
+				// TODO: logging
 				return;
 			}
 
@@ -59,6 +60,13 @@ namespace IMKK {
 			} catch {
 				RemoveTask(keyTask);
 				throw;
+			}
+			// TODO: logging
+		}
+
+		public void MonitorTask(ValueTask valueTask) {
+			if (valueTask.IsCompletedSuccessfully == false) {
+				MonitorTask(valueTask.AsTask());
 			}
 		}
 

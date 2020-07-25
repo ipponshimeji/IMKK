@@ -41,7 +41,7 @@ namespace IMKK.Server.Configurations {
 
 		#region creation
 
-		public IMKKServerConfig(IEnumerable<ChannelConfig>? channels) {
+		public IMKKServerConfig(IEnumerable<ChannelConfig>? channels = null) {
 			// check argument
 			if (channels == null) {
 				channels = Array.Empty<ChannelConfig>();

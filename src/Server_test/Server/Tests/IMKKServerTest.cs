@@ -2,7 +2,7 @@ using System;
 using Xunit;
 
 namespace IMKK.Server.Tests {
-	public class IMMKServerTest {
+	public class IMKKServerTest {
 		[Fact]
 		public void dummy() {
 		}

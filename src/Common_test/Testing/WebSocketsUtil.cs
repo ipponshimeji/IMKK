@@ -66,14 +66,31 @@ namespace IMKK.Testing {
 			return listener;
 		}
 
-		public static async ValueTask<WebSocket> AcceptWebSocketAsync(this HttpListener listener) {
+		public static async Task<WebSocket> AcceptWebSocketAsync(this HttpListener listener) {
 			// check argument
 			if (listener == null) {
 				throw new ArgumentNullException(nameof(listener));
 			}
 
 			// accept a request
-			HttpListenerContext context = listener.GetContext();
+			// Use HttpListener.BeginGetContext instead of HttpListener.GetContext(),
+			// because the latter method cannot detect HttpListener.Stop().
+			HttpListenerContext? context = null;
+			using (ManualResetEventSlim acceptedEvent = new ManualResetEventSlim(initialState: false)) {
+				IAsyncResult asyncResult = listener.BeginGetContext((ar) => {
+					if (listener.IsListening) {
+						context = listener.EndGetContext(ar);
+					}
+					acceptedEvent.Set();
+				}, null);
+				await Task.Run(() => { acceptedEvent.Wait(); });
+			}
+			if (context == null) {
+				// The listener stops listening.
+				throw new OperationCanceledException();
+			}
+
+			// filter requests other than web socket request 
 			if (context.Request.IsWebSocketRequest == false) {
 				context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
 				context.Response.Close();
