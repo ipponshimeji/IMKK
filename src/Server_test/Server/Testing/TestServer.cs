@@ -48,10 +48,10 @@ namespace IMKK.Server.Testing {
 					throw new InvalidOperationException("The server has been started.");
 				}
 
-				// create a IMMK server and start listening
+				// create a IMKK server and start listening
 				Task task;
 				HttpListener listener;
-				IMKKServer server = CreateIMMKServer(imkkConfig);
+				IMKKServer server = CreateIMKKServer(imkkConfig);
 				try {
 					// start the server
 					listener = WebSocketsUtil.StartListening();
@@ -75,7 +75,7 @@ namespace IMKK.Server.Testing {
 		}
 
 		public void Stop() {
-			IMKKServer? immkServer;
+			IMKKServer? imkkServer;
 			HttpListener? listener;
 			Task? listeningTask;
 
@@ -91,19 +91,19 @@ namespace IMKK.Server.Testing {
 				// old
 				listeningTask = Interlocked.Exchange(ref this.listeningTask, null);
 				listener = Interlocked.Exchange(ref this.httpListener, null);
-				immkServer = Interlocked.Exchange(ref this.imkkServer, null);
+				imkkServer = Interlocked.Exchange(ref this.imkkServer, null);
 			}
 
 			// stop the listener
 			Debug.Assert(listeningTask != null);
 			Debug.Assert(listener != null);
-			Debug.Assert(immkServer != null);
+			Debug.Assert(imkkServer != null);
 			try {
 				listener.Stop();
 				listeningTask.Wait();
 			} finally {
 				listener.Close();
-				immkServer.Dispose();
+				imkkServer.Dispose();
 			}
 		}
 
@@ -112,26 +112,26 @@ namespace IMKK.Server.Testing {
 
 		#region overridables
 
-		protected virtual IMKKServer CreateIMMKServer(IIMKKServerConfig config) {
+		protected virtual IMKKServer CreateIMKKServer(IIMKKServerConfig config) {
 			// check arguments
 			Debug.Assert(config != null);
 
 			return IMKKServer.Create(config);
 		}
 
-		protected virtual async Task Listen(HttpListener httpListener, IMKKServer immkServer) {
+		protected virtual async Task Listen(HttpListener httpListener, IMKKServer imkkServer) {
 			// check arguments
 			if (httpListener == null) {
 				throw new ArgumentNullException(nameof(httpListener));
 			}
-			if (immkServer == null) {
-				throw new ArgumentNullException(nameof(immkServer));
+			if (imkkServer == null) {
+				throw new ArgumentNullException(nameof(imkkServer));
 			}
 
 			while (true) {
 				try {
 					WebSocket webSocket = await httpListener.AcceptWebSocketAsync();
-					RunningTaskTable.MonitorTask(immkServer.NegotiateAndAddConnectionAsync(webSocket));
+					RunningTaskTable.MonitorTask(imkkServer.NegotiateAndAddConnectionAsync(webSocket));
 				} catch (OperationCanceledException) {
 					// the httpListener stopped listening
 					break;
