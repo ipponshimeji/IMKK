@@ -6,7 +6,7 @@ using Utf8Json;
 
 
 namespace IMKK.Server.Configurations {
-	public class IMKKServerConfig: IIMKKServerConfig {
+	public class ImkkServerConfig: IImkkServerConfig {
 		#region types
 
 		public static class PropertyNames {
@@ -41,7 +41,7 @@ namespace IMKK.Server.Configurations {
 
 		#region creation
 
-		public IMKKServerConfig(IEnumerable<ChannelConfig>? channels = null) {
+		public ImkkServerConfig(IEnumerable<ChannelConfig>? channels = null) {
 			// check argument
 			if (channels == null) {
 				channels = Array.Empty<ChannelConfig>();
@@ -51,23 +51,23 @@ namespace IMKK.Server.Configurations {
 			this.channels = channels;
 		}
 
-		public static IMKKServerConfig CreateFromJson(string json) {
+		public static ImkkServerConfig CreateFromJson(string json) {
 			// check argument
 			if (json == null) {
 				throw new ArgumentNullException(nameof(json));
 			}
 
-			return JsonSerializer.Deserialize<IMKKServerConfig>(json);
+			return JsonSerializer.Deserialize<ImkkServerConfig>(json);
 		}
 
-		public static IMKKServerConfig CreateFromJsonFile(string filePath) {
+		public static ImkkServerConfig CreateFromJsonFile(string filePath) {
 			// check argument
 			if (filePath == null) {
 				throw new ArgumentNullException(nameof(filePath));
 			}
 
 			using (Stream stream = File.OpenRead(filePath)) {
-				return JsonSerializer.Deserialize<IMKKServerConfig>(stream);
+				return JsonSerializer.Deserialize<ImkkServerConfig>(stream);
 			}
 		}
 

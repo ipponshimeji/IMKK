@@ -9,7 +9,7 @@ using IMKK.Communication;
 using IMKK.Server.Configurations;
 
 namespace IMKK.Server {
-	public class IMKKServer: IDisposable {
+	public class ImkkServer: IDisposable {
 		#region data
 
 		private object instanceLocker = new object();
@@ -23,10 +23,10 @@ namespace IMKK.Server {
 
 		#region creation & disposal
 
-		public IMKKServer() {
+		public ImkkServer() {
 		}
 
-		protected virtual void Initialize(IIMKKServerConfig config) {
+		protected virtual void Initialize(IImkkServerConfig config) {
 			// check argument
 			if (config == null) {
 				throw new ArgumentNullException(nameof(config));
@@ -55,8 +55,8 @@ namespace IMKK.Server {
 			}
 		}
 
-		public static IMKKServer Create(IIMKKServerConfig config) {
-			IMKKServer server = new IMKKServer();
+		public static ImkkServer Create(IImkkServerConfig config) {
+			ImkkServer server = new ImkkServer();
 			server.Initialize(config);
 			return server;
 		}

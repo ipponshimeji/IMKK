@@ -4,7 +4,7 @@ using Utf8Json;
 using Xunit;
 
 namespace IMKK.Server.Configurations.Tests {
-	public class IMKKServerConfigTest {
+	public class ImkkServerConfigTest {
 		#region constructor
 
 		public class Constructor {
@@ -19,7 +19,7 @@ namespace IMKK.Server.Configurations.Tests {
 				};
 
 				// act
-				IMKKServerConfig target = new IMKKServerConfig(channels);
+				ImkkServerConfig target = new ImkkServerConfig(channels);
 
 				// assert
 				Assert.Equal(channels, target.Channels);
@@ -30,7 +30,7 @@ namespace IMKK.Server.Configurations.Tests {
 				// arrange
 
 				// act
-				IMKKServerConfig target = new IMKKServerConfig(null);
+				ImkkServerConfig target = new ImkkServerConfig(null);
 
 				// assert
 				Assert.Empty(target.Channels);
@@ -62,7 +62,7 @@ namespace IMKK.Server.Configurations.Tests {
 				}}";
 
 				// act
-				IMKKServerConfig target = JsonSerializer.Deserialize<IMKKServerConfig>(json);
+				ImkkServerConfig target = JsonSerializer.Deserialize<ImkkServerConfig>(json);
 
 				// assert
 				Assert.Equal(channels, target.Channels);
@@ -74,7 +74,7 @@ namespace IMKK.Server.Configurations.Tests {
 				string json = "{}";
 
 				// act
-				IMKKServerConfig target = JsonSerializer.Deserialize<IMKKServerConfig>(json);
+				ImkkServerConfig target = JsonSerializer.Deserialize<ImkkServerConfig>(json);
 
 				// assert
 				Assert.Empty(target.Channels);
@@ -95,7 +95,7 @@ namespace IMKK.Server.Configurations.Tests {
 				}}";
 
 				// act
-				IMKKServerConfig target = JsonSerializer.Deserialize<IMKKServerConfig>(json);
+				ImkkServerConfig target = JsonSerializer.Deserialize<ImkkServerConfig>(json);
 
 				// assert
 				Assert.Equal(channels, target.Channels);
@@ -127,7 +127,7 @@ namespace IMKK.Server.Configurations.Tests {
 				}}";
 
 				// act
-				IMKKServerConfig target = IMKKServerConfig.CreateFromJson(json);
+				ImkkServerConfig target = ImkkServerConfig.CreateFromJson(json);
 
 				// assert
 				Assert.Equal(channels, target.Channels);
@@ -140,7 +140,7 @@ namespace IMKK.Server.Configurations.Tests {
 
 				// act
 				ArgumentNullException actual = Assert.Throws<ArgumentNullException>(() => {
-					IMKKServerConfig.CreateFromJson(json);
+					ImkkServerConfig.CreateFromJson(json);
 				});
 
 				// assert
@@ -176,7 +176,7 @@ namespace IMKK.Server.Configurations.Tests {
 					File.WriteAllText(filePath, json);
 
 					// act
-					IMKKServerConfig target = IMKKServerConfig.CreateFromJsonFile(filePath);
+					ImkkServerConfig target = ImkkServerConfig.CreateFromJsonFile(filePath);
 
 					// assert
 					Assert.Equal(channels, target.Channels);
@@ -193,7 +193,7 @@ namespace IMKK.Server.Configurations.Tests {
 
 				// act
 				ArgumentNullException actual = Assert.Throws<ArgumentNullException>(() => {
-					IMKKServerConfig.CreateFromJsonFile(filePath);
+					ImkkServerConfig.CreateFromJsonFile(filePath);
 				});
 
 				// assert

@@ -23,7 +23,7 @@ namespace IMKK.Server.Testing {
 
 		private readonly object instanceLocker = new object();
 
-		private IMKKServer? imkkServer = null;
+		private ImkkServer? imkkServer = null;
 
 		private HttpListener? httpListener = null;
 
@@ -42,8 +42,8 @@ namespace IMKK.Server.Testing {
 
 		#region methods
 
-		public static IIMKKServerConfig CreateSampleConfig() {
-			return new IMKKServerConfig(
+		public static IImkkServerConfig CreateSampleConfig() {
+			return new ImkkServerConfig(
 				new ChannelConfig[] {
 					new ChannelConfig(SampleKey0),
 					new ChannelConfig(SampleKey1)
@@ -52,10 +52,10 @@ namespace IMKK.Server.Testing {
 		}
 
 
-		public void Start(IIMKKServerConfig? imkkConfig = null) {
+		public void Start(IImkkServerConfig? imkkConfig = null) {
 			// check arguments
 			if (imkkConfig == null) {
-				imkkConfig = new IMKKServerConfig();
+				imkkConfig = new ImkkServerConfig();
 			}
 
 			lock (this.instanceLocker) {
@@ -67,7 +67,7 @@ namespace IMKK.Server.Testing {
 				// create a IMKK server and start listening
 				Task task;
 				HttpListener listener;
-				IMKKServer server = CreateIMKKServer(imkkConfig);
+				ImkkServer server = CreateIMKKServer(imkkConfig);
 				try {
 					// start the server
 					listener = WebSocketsUtil.StartListening();
@@ -90,7 +90,7 @@ namespace IMKK.Server.Testing {
 		}
 
 		public void Stop() {
-			IMKKServer? imkkServer;
+			ImkkServer? imkkServer;
 			HttpListener? listener;
 			Task? listeningTask;
 
@@ -169,14 +169,14 @@ namespace IMKK.Server.Testing {
 
 		#region overridables
 
-		protected virtual IMKKServer CreateIMKKServer(IIMKKServerConfig config) {
+		protected virtual ImkkServer CreateIMKKServer(IImkkServerConfig config) {
 			// check arguments
 			Debug.Assert(config != null);
 
-			return IMKKServer.Create(config);
+			return ImkkServer.Create(config);
 		}
 
-		protected virtual async Task Listen(HttpListener httpListener, IMKKServer imkkServer) {
+		protected virtual async Task Listen(HttpListener httpListener, ImkkServer imkkServer) {
 			// check arguments
 			if (httpListener == null) {
 				throw new ArgumentNullException(nameof(httpListener));

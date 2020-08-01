@@ -29,7 +29,7 @@ namespace IMKK.Server.Testing.Tests {
 
 			#region overrides
 
-			protected override Task Listen(HttpListener httpListener, IMKKServer imkkServer) {
+			protected override Task Listen(HttpListener httpListener, ImkkServer imkkServer) {
 				Interlocked.Increment(ref this.listeningCount);
 				try {
 					return base.Listen(httpListener, imkkServer);

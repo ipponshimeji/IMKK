@@ -2,7 +2,7 @@
 using System.Diagnostics;
 
 namespace IMKK.Client {
-	public class IMKKClient: IDisposable {
+	public class ImkkClient: IDisposable {
 		#region data
 
 		private object instanceLocker = new object();
@@ -12,7 +12,7 @@ namespace IMKK.Client {
 
 		#region creation & disposal
 
-		public IMKKClient() {
+		public ImkkClient() {
 		}
 
 		public virtual void Dispose() {

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 
 namespace IMKK.Server.Configurations {
-	public interface IIMKKServerConfig {
+	public interface IImkkServerConfig {
 		IEnumerable<ChannelConfig> Channels { get; }
 	}
 }
