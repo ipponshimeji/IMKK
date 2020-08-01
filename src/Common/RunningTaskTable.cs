@@ -6,7 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 
-namespace IMKK {
+namespace Imkk {
 	public class RunningTaskTable {
 		#region data
 

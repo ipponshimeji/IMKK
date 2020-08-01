@@ -3,7 +3,7 @@ using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 
 
-namespace IMKK {
+namespace Imkk {
 	public static class TaskUtil {
 		#region data
 

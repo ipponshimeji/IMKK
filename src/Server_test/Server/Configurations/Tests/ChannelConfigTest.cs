@@ -3,7 +3,7 @@ using System.Diagnostics;
 using Utf8Json;
 using Xunit;
 
-namespace IMKK.Server.Configurations.Tests {
+namespace Imkk.Server.Configurations.Tests {
 	public class ChannelConfigTest {
 		#region constructor
 

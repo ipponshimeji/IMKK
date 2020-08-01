@@ -6,10 +6,10 @@ using System.Net;
 using System.Net.WebSockets;
 using System.Text;
 using System.Threading.Tasks;
-using IMKK.Testing;
+using Imkk.Testing;
 
 
-namespace IMKK.WebSockets.Tests {
+namespace Imkk.WebSockets.Tests {
 	public static class WebSocketsTestUtil {
 		#region constants
 

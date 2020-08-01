@@ -5,7 +5,7 @@ using Microsoft.VisualBasic.CompilerServices;
 using Utf8Json;
 
 
-namespace IMKK.Server.Configurations {
+namespace Imkk.Server.Configurations {
 	public class ChannelConfig {
 		#region types
 

@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using Xunit;
 
 
-namespace IMKK.WebSockets.Tests {
+namespace Imkk.WebSockets.Tests {
 	public class MessageStreamTest {
 		#region utilities
 

@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-    <AssemblyName>IMKK.Common</AssemblyName>
-    <RootNamespace>IMKK</RootNamespace>
+    <AssemblyName>Imkk.Common</AssemblyName>
+    <RootNamespace>Imkk</RootNamespace>
     <Nullable>enable</Nullable>
     <Authors>Takamasa Uramoto</Authors>
     <Product>IMKK (Ittan Mochi Kaette Kentoushimasu)</Product>

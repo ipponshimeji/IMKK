@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <IsPackable>false</IsPackable>
-    <AssemblyName>IMKK.Server.Test</AssemblyName>
+    <AssemblyName>Imkk.Server.Tests</AssemblyName>
     <RootNamespace>IMKK</RootNamespace>
     <Nullable>enable</Nullable>
     <Authors>Takamasa Uramoto</Authors>

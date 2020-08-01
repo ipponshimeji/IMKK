@@ -4,7 +4,7 @@ using System.IO;
 using System.Net.WebSockets;
 
 
-namespace IMKK.WebSockets {
+namespace Imkk.WebSockets {
 	public class MessageStream: Stream {
 		#region data
 

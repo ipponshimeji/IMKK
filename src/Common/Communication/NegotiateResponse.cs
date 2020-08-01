@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Runtime.Serialization;
 using System.Threading.Tasks;
-using IMKK.WebSockets;
+using Imkk.WebSockets;
 
-namespace IMKK.Communication {
+namespace Imkk.Communication {
 	public class NegotiateResponse {
 		#region types
 

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Utf8Json;
 
 
-namespace IMKK.Testing {
+namespace Imkk.Testing {
 	public static class TestingUtil {
 		#region utilities
 

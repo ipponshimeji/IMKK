@@ -4,12 +4,12 @@ using System.Net;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
-using IMKK.Server.Configurations;
-using IMKK.Communication;
-using IMKK.Testing;
-using IMKK.WebSockets;
+using Imkk.Server.Configurations;
+using Imkk.Communication;
+using Imkk.Testing;
+using Imkk.WebSockets;
 
-namespace IMKK.Server.Testing {
+namespace Imkk.Server.Testing {
 	public class TestServer {
 		#region data
 

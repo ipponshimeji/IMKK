@@ -6,11 +6,11 @@ using System.Net;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
-using IMKK.Testing;
+using Imkk.Testing;
 using Xunit;
 
 
-namespace IMKK.WebSockets.Tests {
+namespace Imkk.WebSockets.Tests {
 	public class WebSocketConnectionTest {
 		#region utilities
 

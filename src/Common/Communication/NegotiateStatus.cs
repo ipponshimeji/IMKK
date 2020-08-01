@@ -1,7 +1,7 @@
 ﻿using System;
 
 
-namespace IMKK.Communication {
+namespace Imkk.Communication {
 	public enum NegotiateStatus {
 		Undefined = -1,			// not set
 		Succeeded = 0,			// the negotiation succeeded

@@ -2,9 +2,9 @@
 using System.Diagnostics;
 using System.Runtime.Serialization;
 using System.Threading.Tasks;
-using IMKK.WebSockets;
+using Imkk.WebSockets;
 
-namespace IMKK.Communication {
+namespace Imkk.Communication {
 	public class NegotiateException: InvalidOperationException {
 		#region data
 

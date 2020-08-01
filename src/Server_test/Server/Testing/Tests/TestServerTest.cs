@@ -4,7 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace IMKK.Server.Testing.Tests {
+namespace Imkk.Server.Testing.Tests {
 	public class TestServerTest {
 		#region types
 

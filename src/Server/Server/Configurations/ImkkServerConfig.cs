@@ -5,7 +5,7 @@ using System.Runtime.Serialization;
 using Utf8Json;
 
 
-namespace IMKK.Server.Configurations {
+namespace Imkk.Server.Configurations {
 	public class ImkkServerConfig: IImkkServerConfig {
 		#region types
 

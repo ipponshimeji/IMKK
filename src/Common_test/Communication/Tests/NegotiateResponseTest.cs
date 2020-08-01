@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using Utf8Json;
 using Xunit;
-using IMKK.Testing;
+using Imkk.Testing;
 using System.Diagnostics;
 
-namespace IMKK.Communication.Tests {
+namespace Imkk.Communication.Tests {
 	public class NegotiateResponseTest {
 		#region tests
 

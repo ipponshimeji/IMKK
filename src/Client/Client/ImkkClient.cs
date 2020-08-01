@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 
-namespace IMKK.Client {
+namespace Imkk.Client {
 	public class ImkkClient: IDisposable {
 		#region data
 

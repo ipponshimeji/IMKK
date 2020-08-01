@@ -5,7 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 
-namespace IMKK.WebSockets {
+namespace Imkk.WebSockets {
 	public class SendMessageStream: MessageStream {
 		#region data
 

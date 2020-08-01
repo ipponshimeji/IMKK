@@ -5,12 +5,12 @@ using System.Linq;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
-using IMKK.WebSockets;
-using IMKK.Server.Configurations;
-using IMKK.Communication;
+using Imkk.WebSockets;
+using Imkk.Server.Configurations;
+using Imkk.Communication;
 using System.Runtime.InteropServices;
 
-namespace IMKK.Server {
+namespace Imkk.Server {
 	public class Channel: IDisposable {
 		#region types
 

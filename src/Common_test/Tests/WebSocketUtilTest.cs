@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Xunit;
 
 
-namespace IMKK.Tests {
+namespace Imkk.Tests {
 	public class TaskUtilTest {
 		#region types
 

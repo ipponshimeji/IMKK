@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using Utf8Json;
 
 
-namespace IMKK.WebSockets {
+namespace Imkk.WebSockets {
 	public class WebSocketConnection: IDisposable {
 		#region types
 

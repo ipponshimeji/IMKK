@@ -4,11 +4,11 @@ using System.Diagnostics;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
-using IMKK.WebSockets;
-using IMKK.Communication;
-using IMKK.Server.Configurations;
+using Imkk.WebSockets;
+using Imkk.Communication;
+using Imkk.Server.Configurations;
 
-namespace IMKK.Server {
+namespace Imkk.Server {
 	public class ImkkServer: IDisposable {
 		#region data
 
