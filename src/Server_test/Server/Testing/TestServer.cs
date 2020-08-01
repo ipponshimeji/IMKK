@@ -5,12 +5,18 @@ using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
 using IMKK.Server.Configurations;
+using IMKK.Communication;
 using IMKK.Testing;
-
+using IMKK.WebSockets;
 
 namespace IMKK.Server.Testing {
 	public class TestServer {
 		#region data
+
+		public const string SampleKey0 = "abcdefghijklmn";
+
+		public const string SampleKey1 = "UVWXYZ012345";
+
 
 		// use global RunnintTaskTable as the RunningTaskTable for this server.
 		protected readonly RunningTaskTable RunningTaskTable = TaskUtil.RunningTaskTable;
@@ -36,6 +42,16 @@ namespace IMKK.Server.Testing {
 
 		#region methods
 
+		public static IIMKKServerConfig CreateSampleConfig() {
+			return new IMKKServerConfig(
+				new ChannelConfig[] {
+					new ChannelConfig(SampleKey0),
+					new ChannelConfig(SampleKey1)
+				}
+			);
+		}
+
+
 		public void Start(IIMKKServerConfig? imkkConfig = null) {
 			// check arguments
 			if (imkkConfig == null) {
@@ -56,7 +72,6 @@ namespace IMKK.Server.Testing {
 					// start the server
 					listener = WebSocketsUtil.StartListening();
 					try {
-						listener.Start();
 						task = Listen(listener, server);
 					} catch {
 						listener.Close();
@@ -85,8 +100,6 @@ namespace IMKK.Server.Testing {
 					// already stopped
 					return;
 				}
-				Debug.Assert(this.httpListener != null);
-				Debug.Assert(this.listeningTask != null);
 
 				// old
 				listeningTask = Interlocked.Exchange(ref this.listeningTask, null);
@@ -105,6 +118,50 @@ namespace IMKK.Server.Testing {
 				listener.Close();
 				imkkServer.Dispose();
 			}
+		}
+
+		public async ValueTask<WebSocketConnection> Connect() {
+			// check state
+			HttpListener? listener = this.httpListener;
+			if (listener == null) {
+				throw CreateNotServingException();
+			}
+
+			ClientWebSocket webSocket = await listener.ConnectWebSocketAsync();
+			try {
+				return new WebSocketConnection(webSocket);
+			} catch {
+				webSocket.Dispose();
+				throw;
+			}
+		}
+
+		public async ValueTask<WebSocketConnection> ConnectAndNegotiate(NegotiateRequest request) {
+			// check argument
+			if (request == null) {
+				throw new ArgumentNullException(nameof(request));
+			}
+
+			// connect
+			WebSocketConnection connection = await Connect();
+			try {
+				// negotiate
+				await connection.SendJsonAsync<NegotiateRequest>(request);
+				NegotiateResponse response = await connection.ReceiveJsonAsync<NegotiateResponse>();
+				if (response.Status != NegotiateStatus.Succeeded) {
+					throw new NegotiateException(response);
+				}
+			} catch {
+				await connection.CloseAsync();
+				connection.Dispose();
+				throw;
+			}
+
+			return connection;
+		}
+
+		protected static InvalidOperationException CreateNotServingException() {
+			return new InvalidOperationException("The server is not serving now.");
 		}
 
 		#endregion
@@ -128,7 +185,7 @@ namespace IMKK.Server.Testing {
 				throw new ArgumentNullException(nameof(imkkServer));
 			}
 
-			while (true) {
+			do {
 				try {
 					WebSocket webSocket = await httpListener.AcceptWebSocketAsync();
 					RunningTaskTable.MonitorTask(imkkServer.NegotiateAndAddConnectionAsync(webSocket));
@@ -138,7 +195,7 @@ namespace IMKK.Server.Testing {
 				} catch {
 					// try to accept next 
 				}
-			}
+			} while (true);
 		}
 
 		#endregion

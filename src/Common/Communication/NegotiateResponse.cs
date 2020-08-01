@@ -82,6 +82,22 @@ namespace IMKK.Communication {
 
 		#region methods
 
+		public static string GetStandardMessage(NegotiateStatus status) {
+			switch (status) {
+				case NegotiateStatus.Succeeded:
+					return StandardMessages.Succeeded;
+				case NegotiateStatus.Error:
+					return StandardMessages.Error;
+				case NegotiateStatus.InvalidKey:
+					return StandardMessages.InvalidKey;
+				case NegotiateStatus.TooManyConnection:
+					return StandardMessages.TooManyConnection;
+				default:
+					// return general error
+					return StandardMessages.Error;
+			}
+		}
+
 		/// <summary>
 		/// Notifies UTF8Json serializer whether Message should be serialized or not. 
 		/// </summary>
