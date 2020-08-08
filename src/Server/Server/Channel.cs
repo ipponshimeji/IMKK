@@ -1,18 +1,30 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Imkk.WebSockets;
-using Imkk.Server.Configurations;
 using Imkk.Communication;
-using System.Runtime.InteropServices;
+
 
 namespace Imkk.Server {
 	public class Channel: IDisposable {
 		#region types
+
+		public static class ConfigNames {
+			#region constants
+
+			public const string Key = "key";
+
+			public const string MaxConnectionCount = "maxConnectionCount";
+
+			public const string Name = "name";
+
+			#endregion
+		}
 
 		protected class WaitingRequest: IDisposable {
 			#region data
@@ -80,10 +92,19 @@ namespace Imkk.Server {
 		#endregion
 
 
+		#region constants
+
+		public const int DefaultMaxConnectionCount = 8;
+
+		#endregion
+
+
 		#region data
 
 		private readonly object instanceLocker = new object();
 
+
+		public readonly string Name;
 
 		public readonly string Key;
 
@@ -104,23 +125,30 @@ namespace Imkk.Server {
 
 		#region creation & disposal
 
-		public Channel(ChannelConfig config) {
+		public Channel(IConfigurationSection config, ILogger? logger) {
 			// check argument
 			if (config == null) {
 				throw new ArgumentNullException(nameof(config));
 			}
+			// logger can be null
 
-			string? key = config.Key;
-			if (key == null) {
-				throw new ArgumentNullException(nameof(config.Key));
+			string? name = config[ConfigNames.Name];
+			if (name == null) {
+				throw ConfigurationUtil.CreateMissingConfigurationException(config.Path, ConfigNames.Name);
 			}
 
-			int maxConnectionCount = config.MaxConnectionCount;
+			string? key = config[ConfigNames.Key];
+			if (key == null) {
+				throw ConfigurationUtil.CreateMissingConfigurationException(config.Path, ConfigNames.Key);
+			}
+
+			int maxConnectionCount = config.GetValue<int>(ConfigNames.MaxConnectionCount, DefaultMaxConnectionCount);
 			if (maxConnectionCount < 0) {
-				throw new ArgumentOutOfRangeException(nameof(config.MaxConnectionCount));
+				throw ConfigurationUtil.CreateOutOfRangeValueException(config.Path, ConfigNames.MaxConnectionCount);
 			}
 
 			// initialize members
+			this.Name = name;
 			this.Key = key;
 			this.MaxConnectionCount = maxConnectionCount;
 		}

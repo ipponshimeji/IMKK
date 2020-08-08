@@ -4,17 +4,22 @@ using System.Net;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
-using Imkk.Server.Configurations;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Imkk.Communication;
 using Imkk.Testing;
 using Imkk.WebSockets;
+using System.Collections.Generic;
+
 
 namespace Imkk.Server.Testing {
 	public class TestServer {
 		#region data
 
+		public const string SampleName0 = "sample0";
 		public const string SampleKey0 = "abcdefghijklmn";
 
+		public const string SampleName1 = "sample1";
 		public const string SampleKey1 = "UVWXYZ012345";
 
 
@@ -42,20 +47,23 @@ namespace Imkk.Server.Testing {
 
 		#region methods
 
-		public static IImkkServerConfig CreateSampleConfig() {
-			return new ImkkServerConfig(
-				new ChannelConfig[] {
-					new ChannelConfig(SampleKey0),
-					new ChannelConfig(SampleKey1)
-				}
-			);
+		public static IConfigurationSection CreateSampleConfig() {
+			Dictionary<string, string> dic = new Dictionary<string, string> {
+				{$"sample:{ImkkServer.ConfigNames.Channels}:0:{Channel.ConfigNames.Name}", SampleName0},
+				{$"sample:{ImkkServer.ConfigNames.Channels}:0:{Channel.ConfigNames.Key}", SampleKey0},
+				{$"sample:{ImkkServer.ConfigNames.Channels}:1:{Channel.ConfigNames.Name}", SampleName1},
+				{$"sample:{ImkkServer.ConfigNames.Channels}:1:{Channel.ConfigNames.Key}", SampleKey1},
+			};
+
+			return new ConfigurationBuilder().AddInMemoryCollection(dic).Build().GetSection("sample");
 		}
 
 
-		public void Start(IImkkServerConfig? imkkConfig = null) {
+		public void Start(IConfigurationSection? imkkConfig = null, ILogger? logger = null) {
 			// check arguments
 			if (imkkConfig == null) {
-				imkkConfig = new ImkkServerConfig();
+				// use the default sample configuration
+				imkkConfig = CreateSampleConfig();
 			}
 
 			lock (this.instanceLocker) {
@@ -67,7 +75,7 @@ namespace Imkk.Server.Testing {
 				// create a IMKK server and start listening
 				Task task;
 				HttpListener listener;
-				ImkkServer server = CreateIMKKServer(imkkConfig);
+				ImkkServer server = CreateIMKKServer(imkkConfig, logger);
 				try {
 					// start the server
 					listener = WebSocketsUtil.StartListening();
@@ -169,11 +177,11 @@ namespace Imkk.Server.Testing {
 
 		#region overridables
 
-		protected virtual ImkkServer CreateIMKKServer(IImkkServerConfig config) {
+		protected virtual ImkkServer CreateIMKKServer(IConfigurationSection config, ILogger? logger) {
 			// check arguments
 			Debug.Assert(config != null);
 
-			return ImkkServer.Create(config);
+			return ImkkServer.Create(config, logger);
 		}
 
 		protected virtual async Task Listen(HttpListener httpListener, ImkkServer imkkServer) {
