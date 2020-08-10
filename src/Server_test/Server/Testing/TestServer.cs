@@ -7,13 +7,14 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Imkk.Communication;
+using Imkk.ObjectModel;
 using Imkk.Testing;
 using Imkk.WebSockets;
 using System.Collections.Generic;
 
 
 namespace Imkk.Server.Testing {
-	public class TestServer {
+	public class TestServer: ObjectWithRunningContext<IImkkServerRunningContext> {
 		#region data
 
 		public const string SampleName0 = "sample0";
@@ -39,7 +40,7 @@ namespace Imkk.Server.Testing {
 
 		#region creation
 
-		public TestServer() {
+		public TestServer(IImkkServerRunningContext runningContext): base(runningContext) {
 		}
 
 		#endregion
@@ -59,7 +60,7 @@ namespace Imkk.Server.Testing {
 		}
 
 
-		public void Start(IConfigurationSection? imkkConfig = null, ILogger? logger = null) {
+		public void Start(IConfigurationSection? imkkConfig = null) {
 			// check arguments
 			if (imkkConfig == null) {
 				// use the default sample configuration
@@ -75,7 +76,7 @@ namespace Imkk.Server.Testing {
 				// create a IMKK server and start listening
 				Task task;
 				HttpListener listener;
-				ImkkServer server = CreateIMKKServer(imkkConfig, logger);
+				ImkkServer server = CreateIMKKServer(imkkConfig);
 				try {
 					// start the server
 					listener = WebSocketsUtil.StartListening();
@@ -177,11 +178,11 @@ namespace Imkk.Server.Testing {
 
 		#region overridables
 
-		protected virtual ImkkServer CreateIMKKServer(IConfigurationSection config, ILogger? logger) {
+		protected virtual ImkkServer CreateIMKKServer(IConfigurationSection config) {
 			// check arguments
 			Debug.Assert(config != null);
 
-			return ImkkServer.Create(config, logger);
+			return this.RunningContext.CreateImkkServer(config);
 		}
 
 		protected virtual async Task Listen(HttpListener httpListener, ImkkServer imkkServer) {

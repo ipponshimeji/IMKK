@@ -5,13 +5,13 @@ using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
+using Imkk.ObjectModel;
 using Imkk.WebSockets;
 using Imkk.Communication;
 
 
 namespace Imkk.Server {
-	public class Channel: IDisposable {
+	public class Channel: ObjectWithRunningContext<IRunningContext>, IDisposable {
 		#region types
 
 		public static class ConfigNames {
@@ -125,12 +125,11 @@ namespace Imkk.Server {
 
 		#region creation & disposal
 
-		public Channel(IConfigurationSection config, ILogger? logger) {
+		public Channel(IRunningContext runningContext, IConfigurationSection config) : base(runningContext) {
 			// check argument
 			if (config == null) {
 				throw new ArgumentNullException(nameof(config));
 			}
-			// logger can be null
 
 			string? name = config[ConfigNames.Name];
 			if (name == null) {
@@ -151,6 +150,10 @@ namespace Imkk.Server {
 			this.Name = name;
 			this.Key = key;
 			this.MaxConnectionCount = maxConnectionCount;
+
+			// set name for logging
+			this.NameForLogging = $"Channel '{name}'";
+
 		}
 
 		public virtual void Dispose() {

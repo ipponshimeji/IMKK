@@ -27,6 +27,14 @@ namespace Imkk.Server.Testing.Tests {
 			#endregion
 
 
+			#region creation
+
+			public SampleTestServer(IImkkServerRunningContext runningContext) : base(runningContext) {
+			}
+
+			#endregion
+
+
 			#region overrides
 
 			protected override Task Listen(HttpListener httpListener, ImkkServer imkkServer) {
@@ -49,7 +57,7 @@ namespace Imkk.Server.Testing.Tests {
 		[Fact(DisplayName = "simple start & stop")]
 		public void simple_start_stop() {
 			// arrange
-			SampleTestServer server = new SampleTestServer();
+			SampleTestServer server = new SampleTestServer(ImkkServerRunningContext.Default);
 
 			// act
 			server.Start();

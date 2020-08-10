@@ -5,13 +5,12 @@ using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using Imkk.WebSockets;
 using Imkk.Communication;
-
+using Imkk.ObjectModel;
 
 namespace Imkk.Server {
-	public class ImkkServer: IDisposable {
+	public class ImkkServer: ObjectWithRunningContext<IImkkServerRunningContext>, IDisposable {
 		#region types
 
 		public static class ConfigNames {
@@ -38,20 +37,20 @@ namespace Imkk.Server {
 
 		#region creation & disposal
 
-		public ImkkServer() {
+		public ImkkServer(IImkkServerRunningContext runningContext) : base(runningContext) {
 		}
 
-		protected virtual void Initialize(IConfigurationSection config, ILogger? logger) {
+		protected virtual void Initialize(IConfigurationSection config) {
 			// check argument
 			if (config == null) {
 				throw new ArgumentNullException(nameof(config));
 			}
-			// logger can be null
+			// runningContext can be null
 
 			// create channels
 			Dictionary<string, Channel> channels = new Dictionary<string, Channel>();
 			foreach (IConfigurationSection channelConfig in config.GetSection(ConfigNames.Channels).GetChildren()) {
-				Channel channel = CreateChannel(channelConfig, logger);
+				Channel channel = CreateChannel(channelConfig);
 				Debug.Assert(channel.Key != null);
 				channels.Add(channel.Key, channel);
 			}
@@ -72,28 +71,10 @@ namespace Imkk.Server {
 		}
 
 
-		public static ImkkServer Create(IConfigurationSection config, ILogger? logger) {
+		public static ImkkServer Create(IImkkServerRunningContext runningContext, IConfigurationSection config) {
 			// create and initialize a server
-			ImkkServer server = new ImkkServer();
-			server.Initialize(config, logger);
-			return server;
-		}
-
-		public static ImkkServer Create(IConfiguration config, string key, ILogger? logger) {
-			// check arguments
-			if (config == null) {
-				throw new ArgumentNullException(nameof(config));
-			}
-			if (key == null) {
-				throw new ArgumentNullException(nameof(key));
-			}
-
-			// get configuration section to be used
-			IConfigurationSection subConfig = config.GetSection(key);
-
-			// create and initialize a server
-			ImkkServer server = new ImkkServer();
-			server.Initialize(subConfig, logger);
+			ImkkServer server = new ImkkServer(runningContext);
+			server.Initialize(config);
 			return server;
 		}
 
@@ -232,8 +213,8 @@ namespace Imkk.Server {
 
 		#region overridables
 
-		protected virtual Channel CreateChannel(IConfigurationSection config, ILogger? logger) {
-			return new Channel(config, logger);
+		protected virtual Channel CreateChannel(IConfigurationSection config) {
+			return this.RunningContext.CreateChannel(config);
 		}
 
 		#endregion
