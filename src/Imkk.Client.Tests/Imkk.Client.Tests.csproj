@@ -20,8 +20,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Client\Imkk.Client.csproj" />
-    <ProjectReference Include="..\Common\Imkk.csproj" />
+    <ProjectReference Include="..\Imkk.Client\Imkk.Client.csproj" />
+    <ProjectReference Include="..\Imkk\Imkk.csproj" />
   </ItemGroup>
 
 </Project>

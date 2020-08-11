@@ -12,7 +12,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Common\Imkk.csproj" />
+    <ProjectReference Include="..\Imkk\Imkk.csproj" />
   </ItemGroup>
 
 </Project>
