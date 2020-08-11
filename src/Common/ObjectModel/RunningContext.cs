@@ -38,7 +38,7 @@ namespace Imkk.ObjectModel {
 
 		#region IRunningContext
 
-		public virtual ILogger? Logger => this.Logger;
+		public virtual ILogger? Logger => this.logger;
 
 		public virtual RunningTaskTable RunningTaskTable => this.runningTaskTable;
 
