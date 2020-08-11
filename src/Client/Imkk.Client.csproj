@@ -2,17 +2,17 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-    <AssemblyName>Imkk.Common</AssemblyName>
+    <AssemblyName>Imkk.Client</AssemblyName>
     <RootNamespace>Imkk</RootNamespace>
     <Nullable>enable</Nullable>
     <Authors>Takamasa Uramoto</Authors>
     <Product>IMKK (Ittan Mochi Kaette Kentoushimasu)</Product>
     <Copyright>Copyright 2020 Takamasa Uramoto</Copyright>
+
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.1.6" />
-    <PackageReference Include="Utf8Json" Version="1.3.7" />
+    <ProjectReference Include="..\Common\Imkk.csproj" />
   </ItemGroup>
 
 </Project>

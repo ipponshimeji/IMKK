@@ -3,13 +3,13 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <IsPackable>false</IsPackable>
-    <AssemblyName>Imkk.Common.Tests</AssemblyName>
-    <RootNamespace>IMKK</RootNamespace>
+    <AssemblyName>Imkk.Tests</AssemblyName>
+    <RootNamespace>Imkk</RootNamespace>
     <Nullable>enable</Nullable>
     <Authors>Takamasa Uramoto</Authors>
     <Product>IMKK (Ittan Mochi Kaette Kentoushimasu)</Product>
     <Copyright>Copyright 2020 Takamasa Uramoto</Copyright>
-    <PackageId>IMKK.Common.Test</PackageId>
+    <PackageId>Imkk.Tests</PackageId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -22,7 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Common\Common.csproj" />
+    <ProjectReference Include="..\Common\Imkk.csproj" />
   </ItemGroup>
 
 </Project>
