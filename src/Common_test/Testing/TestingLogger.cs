@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 
 namespace Imkk.Testing {
-	public class TestLogger: ILogger, IReadOnlyList<TestLogger.Entry> {
+	public class TestingLogger: ILogger, IReadOnlyList<TestingLogger.Entry> {
 		#region types
 
 		public class Entry {
